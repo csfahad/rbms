@@ -1,9 +1,7 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Calendar,
-    ArrowRight,
-    Search,
     Clock,
     MapPin,
     Train as TrainIcon,
@@ -15,7 +13,7 @@ import {
     Train,
     TrainClass,
     Station,
-    ClassAvailability,
+    getStationSuggestions,
 } from "../services/trainService";
 
 const classOrder = ["SL", "3A", "2A", "1A"];
@@ -38,9 +36,12 @@ const formatTimeDate = (time: string, date: string) => {
 };
 
 const SearchTrainsPage = () => {
+    const [searchParams] = useSearchParams();
     const [source, setSource] = useState("");
     const [destination, setDestination] = useState("");
     const [date, setDate] = useState(() => {
+        const urlDate = searchParams.get("date");
+        if (urlDate) return urlDate;
         const today = new Date();
         return today.toISOString().split("T")[0];
     });
@@ -51,6 +52,77 @@ const SearchTrainsPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const navigate = useNavigate();
+
+    // Helper function to get station details by code
+    const getStationByCode = async (code: string): Promise<Station | null> => {
+        try {
+            const stations = await getStationSuggestions(code);
+            return stations.find((station) => station.code === code) || null;
+        } catch (error) {
+            console.error("Error fetching station details:", error);
+            return null;
+        }
+    };
+
+    // Handle URL parameters on component mount
+    useEffect(() => {
+        const fromCode = searchParams.get("from");
+        const toCode = searchParams.get("to");
+        const searchDate = searchParams.get("date");
+
+        if (fromCode && toCode && searchDate) {
+            // Set loading state
+            setIsLoading(true);
+            setHasSearched(true);
+
+            const loadStationsAndSearch = async () => {
+                try {
+                    // Fetch station details for both source and destination
+                    const [
+                        sourceStationDetails,
+                        destinationStationDetails,
+                        trainResults,
+                    ] = await Promise.all([
+                        getStationByCode(fromCode),
+                        getStationByCode(toCode),
+                        searchTrains(fromCode, toCode, searchDate),
+                    ]);
+
+                    // Set station details and form values
+                    if (sourceStationDetails) {
+                        setSourceStation(sourceStationDetails);
+                        setSource(
+                            `${sourceStationDetails.name} (${sourceStationDetails.code})`
+                        );
+                    } else {
+                        setSource(fromCode); // Fallback to code if station not found
+                    }
+
+                    if (destinationStationDetails) {
+                        setDestinationStation(destinationStationDetails);
+                        setDestination(
+                            `${destinationStationDetails.name} (${destinationStationDetails.code})`
+                        );
+                    } else {
+                        setDestination(toCode); // Fallback to code if station not found
+                    }
+
+                    setTrains(trainResults);
+                    setDate(searchDate);
+                } catch (error) {
+                    console.error("Error loading data:", error);
+                    // Fallback to codes if there's an error
+                    setSource(fromCode);
+                    setDestination(toCode);
+                    setDate(searchDate);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            loadStationsAndSearch();
+        }
+    }, [searchParams]);
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -107,112 +179,10 @@ const SearchTrainsPage = () => {
                         Search Trains
                     </h1>
 
-                    {/* <form onSubmit={handleSearch}>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <StationAutocomplete
-                                label="From"
-                                placeholder="Enter source station"
-                                value={source}
-                                onChange={setSource}
-                                onStationSelect={(station) => {
-                                    setSourceStation(station);
-                                    setSource(
-                                        `${station.name} (${station.code})`
-                                    );
-                                }}
-                            />
-
-                            <StationAutocomplete
-                                label="To"
-                                placeholder="Enter destination station"
-                                value={destination}
-                                onChange={setDestination}
-                                onStationSelect={(station) => {
-                                    setDestinationStation(station);
-                                    setDestination(
-                                        `${station.name} (${station.code})`
-                                    );
-                                }}
-                            />
-
-                            <div>
-                                <label htmlFor="date" className="form-label">
-                                    Journey Date
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Calendar className="h-5 w-5 text-gray-400" />
-                                    </div>
-                                    <input
-                                        type="date"
-                                        id="date"
-                                        value={date}
-                                        onChange={(e) =>
-                                            setDate(e.target.value)
-                                        }
-                                        className="form-input pl-10"
-                                        min={
-                                            new Date()
-                                                .toISOString()
-                                                .split("T")[0]
-                                        }
-                                        max={(() => {
-                                            const maxDate = new Date();
-                                            maxDate.setDate(
-                                                maxDate.getDate() + 120
-                                            ); // 4 months ahead
-                                            return maxDate
-                                                .toISOString()
-                                                .split("T")[0];
-                                        })()}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-6">
-                            <button
-                                type="submit"
-                                disabled={
-                                    isLoading ||
-                                    !sourceStation ||
-                                    !destinationStation
-                                }
-                                className="btn btn-primary w-full md:w-auto flex items-center justify-center"
-                            >
-                                {isLoading ? (
-                                    <svg
-                                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white\"
-                                        xmlns="http://www.w3.org/2000/svg\"
-                                        fill="none\"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <circle
-                                            className="opacity-25\"
-                                            cx="12\"
-                                            cy="12\"
-                                            r="10\"
-                                            stroke="currentColor\"
-                                            strokeWidth="4"
-                                        ></circle>
-                                        <path
-                                            className="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                        ></path>
-                                    </svg>
-                                ) : (
-                                    <Search className="h-5 w-5 mr-2" />
-                                )}
-                                Search Trains
-                            </button>
-                        </div>
-                    </form> */}
-
                     <form onSubmit={handleSearch}>
-                        <div className="flex flex-col md:flex-row md:items-end md:gap-3 gap-2">
+                        <div className="flex flex-col md:flex-row md:items-end md:gap-3 gap-4">
                             {/* FROM */}
-                            <div className="flex-1">
+                            <div className="flex-1 w-full">
                                 <StationAutocomplete
                                     label="From"
                                     placeholder="Enter source station"
@@ -228,12 +198,12 @@ const SearchTrainsPage = () => {
                             </div>
 
                             {/* SWAP */}
-                            <div className="flex items-end justify-center">
+                            <div className="flex justify-center md:items-end md:justify-center">
                                 <button
                                     type="button"
                                     onClick={handleSwap}
                                     disabled={!source || !destination}
-                                    className="h-10 w-10 rounded-full border border-gray-300 bg-white text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                    className="h-12 w-12 md:mb-0 rounded-full border border-gray-300 bg-white text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                                     title="Swap From & To"
                                 >
                                     <Repeat className="h-5 w-5" />
@@ -241,7 +211,7 @@ const SearchTrainsPage = () => {
                             </div>
 
                             {/* TO */}
-                            <div className="flex-1 md:mt-0 mt-[-5px]">
+                            <div className="flex-1 w-full">
                                 <StationAutocomplete
                                     label="To"
                                     placeholder="Enter destination station"
@@ -272,7 +242,7 @@ const SearchTrainsPage = () => {
                                         onChange={(e) =>
                                             setDate(e.target.value)
                                         }
-                                        className="form-input pl-10 w-full"
+                                        className="form-input pl-10 sm:py-2 lg:py-3"
                                         min={
                                             new Date()
                                                 .toISOString()
@@ -295,7 +265,7 @@ const SearchTrainsPage = () => {
                             <div className="w-full md:w-auto">
                                 <button
                                     type="submit"
-                                    className="btn btn-primary w-full md:w-auto"
+                                    className="btn btn-primary w-full md:w-auto sm:py-2 lg:py-3"
                                 >
                                     Search Trains
                                 </button>
@@ -376,131 +346,6 @@ const SearchTrainsPage = () => {
                                 </p>
                             </div>
                         ) : (
-                            // <div className="space-y-6">
-                            //     {trains.map((train) => (
-                            //         <div
-                            //             key={train.id}
-                            //             className="train-card slide-up"
-                            //         >
-                            //             <div className="train-card-header">
-                            //                 <div>
-                            //                     <h3 className="text-xl font-bold text-gray-900">
-                            //                         {train.name}
-                            //                     </h3>
-                            //                     <p className="text-gray-600">
-                            //                         {train.number}
-                            //                     </p>
-                            //                 </div>
-                            //                 <div className="text-right">
-                            //                     <p className="text-gray-600 text-sm">
-                            //                         Runs on:{" "}
-                            //                         {train?.running_days?.join(
-                            //                             ", "
-                            //                         )}
-                            //                     </p>
-                            //                 </div>
-                            //             </div>
-
-                            //             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                            //                 <div className="flex items-start mb-4 md:mb-0">
-                            //                     <div className="text-right mr-3">
-                            //                         <p className="text-xl font-bold">
-                            //                             {train.departure_time}
-                            //                         </p>
-                            //                         <p className="text-sm text-gray-600">
-                            //                             {train.source_code}
-                            //                         </p>
-                            //                     </div>
-                            //                     <div className="flex flex-col items-center mx-2">
-                            //                         <div className="w-3 h-3 rounded-full bg-primary"></div>
-                            //                         <div className="w-0.5 h-16 bg-gray-300"></div>
-                            //                         <div className="w-3 h-3 rounded-full bg-primary"></div>
-                            //                     </div>
-                            //                     <div className="ml-3">
-                            //                         <p className="text-xl font-bold">
-                            //                             {train.arrival_time}
-                            //                         </p>
-                            //                         <p className="text-sm text-gray-600">
-                            //                             {train.destination_code}
-                            //                         </p>
-                            //                     </div>
-                            //                 </div>
-
-                            //                 <div className="flex flex-col items-center mx-4">
-                            //                     <div className="flex items-center mb-1">
-                            //                         <Clock className="h-4 w-4 text-gray-500 mr-1" />
-                            //                         <span className="text-gray-700">
-                            //                             {train.duration}
-                            //                         </span>
-                            //                     </div>
-                            //                     <div className="flex items-center">
-                            //                         <MapPin className="h-4 w-4 text-gray-500 mr-1" />
-                            //                         <span className="text-gray-700">
-                            //                             {train.distance}
-                            //                         </span>
-                            //                     </div>
-                            //                 </div>
-                            //             </div>
-
-                            //             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            //                 {train.availability.map(
-                            //                     (
-                            //                         classInfo: ClassAvailability
-                            //                     ) => (
-                            //                         <div
-                            //                             key={classInfo.type}
-                            //                             className="border rounded-lg p-4 hover:border-primary hover:shadow-md transition-all"
-                            //                         >
-                            //                             <p className="font-semibold text-gray-900">
-                            //                                 {
-                            //                                     classMappings[
-                            //                                         classInfo
-                            //                                             .type
-                            //                                     ]
-                            //                                 }
-                            //                             </p>
-
-                            //                             <div className="flex justify-between items-center mt-2">
-                            //                                 <p className="text-gray-600">
-                            //                                     Fare: ₹
-                            //                                     {classInfo.fare}
-                            //                                 </p>
-                            //                                 <p
-                            //                                     className={`font-medium ${getClassAvailabilityColor(
-                            //                                         classInfo.availableSeats,
-                            //                                         classInfo.totalSeats
-                            //                                     )}`}
-                            //                                 >
-                            //                                     {
-                            //                                         classInfo.availableSeats
-                            //                                     }{" "}
-                            //                                     seats
-                            //                                 </p>
-                            //                             </div>
-
-                            //                             <button
-                            //                                 onClick={() =>
-                            //                                     handleBooking(
-                            //                                         train.id,
-                            //                                         classInfo.type
-                            //                                     )
-                            //                                 }
-                            //                                 disabled={
-                            //                                     classInfo.availableSeats ===
-                            //                                     0
-                            //                                 }
-                            //                                 className="w-full mt-3 py-2 px-4 rounded-md text-center text-sm font-medium text-white bg-primary disabled:bg-gray-300 disabled:cursor-not-allowed hover:bg-primary-light transition-colors"
-                            //                             >
-                            //                                 Book Now
-                            //                             </button>
-                            //                         </div>
-                            //                     )
-                            //                 )}
-                            //             </div>
-                            //         </div>
-                            //     ))}
-                            // </div>
-
                             <div className="space-y-6">
                                 {trains.map((train) => {
                                     const sourceName =
@@ -522,7 +367,6 @@ const SearchTrainsPage = () => {
                                             key={train.id}
                                             className="train-card slide-up border rounded-lg p-5 shadow-sm hover:shadow-md transition-all"
                                         >
-                                            {/* Train name and number */}
                                             <div className="flex justify-between items-start mb-4 bg-gray-50 p-2 rounded-lg">
                                                 <h3 className="text-xl font-bold text-primary">
                                                     {train.name} ({train.number}

@@ -85,7 +85,7 @@ const StationAutocomplete = ({
                     value={value}
                     onChange={handleInputChange}
                     onFocus={() => setShowSuggestions(true)}
-                    className="form-input pl-10"
+                    className="form-input pl-10 sm:py-2 lg:py-3"
                     placeholder={placeholder}
                     autoComplete="off"
                 />
