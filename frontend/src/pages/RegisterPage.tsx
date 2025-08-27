@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import { Mail, Lock, User, Phone, UserPlus } from "lucide-react";
+import { authService } from "../services/authService";
 
 const RegisterPage = () => {
     const [formData, setFormData] = useState({
@@ -14,7 +14,6 @@ const RegisterPage = () => {
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
-    const { register } = useAuth();
     const navigate = useNavigate();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,33 +35,28 @@ const RegisterPage = () => {
     const validateForm = () => {
         const newErrors: Record<string, string> = {};
 
-        // Name validation
         if (!formData.name.trim()) {
             newErrors.name = "Name is required";
         }
 
-        // Email validation
         if (!formData.email) {
             newErrors.email = "Email is required";
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
             newErrors.email = "Email is invalid";
         }
 
-        // Phone validation
         if (!formData.phone) {
             newErrors.phone = "Phone number is required";
         } else if (!/^\d{10}$/.test(formData.phone)) {
             newErrors.phone = "Phone number must be 10 digits";
         }
 
-        // Password validation
         if (!formData.password) {
             newErrors.password = "Password is required";
         } else if (formData.password.length < 6) {
             newErrors.password = "Password must be at least 6 characters";
         }
 
-        // Confirm password validation
         if (formData.password !== formData.confirmPassword) {
             newErrors.confirmPassword = "Passwords do not match";
         }
@@ -81,12 +75,25 @@ const RegisterPage = () => {
         setIsLoading(true);
 
         try {
-            await register(formData.name, formData.email, formData.password);
-            toast.success("Registration successful!");
-            navigate("/");
-        } catch (error) {
-            toast.error("Registration failed. Please try again.");
-            console.error("Registration error:", error);
+            await authService.sendOtp(formData.email);
+            toast.success("OTP sent to your email!");
+
+            navigate("/verify-otp", {
+                state: {
+                    email: formData.email,
+                    registrationData: {
+                        name: formData.name,
+                        email: formData.email,
+                        phone: formData.phone,
+                        password: formData.password,
+                    },
+                },
+            });
+        } catch (error: any) {
+            toast.error(
+                error.message || "Failed to send OTP. Please try again."
+            );
+            console.error("OTP send error:", error);
         } finally {
             setIsLoading(false);
         }

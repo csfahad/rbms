@@ -94,3 +94,4 @@ backend/build/
 backend/coverage/
 backend/tmp/
 backend/uploads/
+backend/setup-email.sh

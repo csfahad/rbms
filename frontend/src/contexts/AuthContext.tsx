@@ -1,6 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 interface User {
     id: string;
     name: string;
@@ -13,6 +15,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     isAdmin: boolean;
     login: (email: string, password: string) => Promise<void>;
+    loginWithData: (user: User, token: string) => void;
     register: (name: string, email: string, password: string) => Promise<void>;
     logout: () => void;
 }
@@ -30,7 +33,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (token) {
-            fetch("http://localhost:5000/api/auth/verify", {
+            fetch(`${API_URL}/auth/verify`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -62,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }, [navigate, location]);
 
     const login = async (email: string, password: string) => {
-        const response = await fetch("http://localhost:5000/api/auth/login", {
+        const response = await fetch(`${API_URL}/auth/login`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -81,16 +84,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     };
 
     const register = async (name: string, email: string, password: string) => {
-        const response = await fetch(
-            "http://localhost:5000/api/auth/register",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ name, email, password }),
-            }
-        );
+        const response = await fetch(`${API_URL}/auth/register`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name, email, password }),
+        });
 
         if (!response.ok) {
             const error = await response.json();
@@ -100,6 +100,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const data = await response.json();
         localStorage.setItem("token", data.token);
         setUser(data.user);
+    };
+
+    const loginWithData = (userData: User, token: string) => {
+        localStorage.setItem("token", token);
+        setUser(userData);
     };
 
     const logout = () => {
@@ -142,6 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 isAuthenticated: !!user,
                 isAdmin: user?.role === "admin",
                 login,
+                loginWithData,
                 register,
                 logout,
             }}

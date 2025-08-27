@@ -1,17 +1,60 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
-export const register = async (name: string, email: string, password: string) => {
-    const response = await fetch(`${API_URL}/auth/register`, {
-        method: 'POST',
+export const sendOtp = async (email: string) => {
+    const response = await fetch(`${API_URL}/auth/send-otp`, {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ email }),
     });
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Registration failed');
+        throw new Error(error.message || "Failed to send OTP");
+    }
+
+    return response.json();
+};
+
+export const verifyOtp = async (
+    email: string,
+    otp: string,
+    registrationData: any
+) => {
+    const response = await fetch(`${API_URL}/auth/verify-otp`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otp, ...registrationData }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "OTP verification failed");
+    }
+
+    return response.json();
+};
+
+export const register = async (
+    name: string,
+    email: string,
+    password: string,
+    phone?: string
+) => {
+    const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password, phone }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Registration failed");
     }
 
     return response.json();
@@ -19,16 +62,16 @@ export const register = async (name: string, email: string, password: string) =>
 
 export const login = async (email: string, password: string) => {
     const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
     });
 
     if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Login failed');
+        throw new Error(error.message || "Login failed");
     }
 
     return response.json();
@@ -37,17 +80,26 @@ export const login = async (email: string, password: string) => {
 export const verifyToken = async (token: string) => {
     const response = await fetch(`${API_URL}/auth/verify`, {
         headers: {
-            'Authorization': `Bearer ${token}`
-        }
+            Authorization: `Bearer ${token}`,
+        },
     });
 
     if (!response.ok) {
-        throw new Error('Invalid token');
+        throw new Error("Invalid token");
     }
 
     return response.json();
 };
 
 export const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
+};
+
+export const authService = {
+    sendOtp,
+    verifyOtp,
+    register,
+    login,
+    verifyToken,
+    logout,
 };
