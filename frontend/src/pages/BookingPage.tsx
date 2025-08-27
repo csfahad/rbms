@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import { getTrainById, TrainClass } from "../services/trainService";
 import { createBooking, Passenger } from "../services/bookingService";
 import {
@@ -85,7 +85,7 @@ const BookingPage = () => {
                 { name: "", age: 0, gender: "Male" },
             ]);
         } else {
-            toast.info("Maximum 6 passengers allowed per booking");
+            toast("Maximum 6 passengers allowed per booking");
         }
     };
 
@@ -93,7 +93,7 @@ const BookingPage = () => {
         if (passengers.length > 1) {
             setPassengers(passengers.filter((_, i) => i !== index));
         } else {
-            toast.info("At least one passenger is required");
+            toast("At least one passenger is required");
         }
     };
 

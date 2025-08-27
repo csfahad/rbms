@@ -10,7 +10,7 @@ const registerSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
     password: z.string().min(6, "Password must be at least 6 characters"),
-    phone: z.string().optional(),
+    phone: z.string().min(1, "Phone number is required"),
 });
 
 const loginSchema = z.object({
@@ -56,7 +56,6 @@ export const sendOtp = async (req: Request, res: Response) => {
             return res.status(400).json({ message: error.errors[0].message });
         }
 
-        console.error("Send OTP error:", error);
         res.status(500).json({ message: "Failed to send OTP" });
     }
 };
@@ -106,7 +105,6 @@ export const verifyOtpAndRegister = async (req: Request, res: Response) => {
             return res.status(400).json({ message: error.errors[0].message });
         }
 
-        console.error("OTP verification error:", error);
         res.status(500).json({ message: "Registration failed" });
     }
 };
@@ -147,7 +145,6 @@ export const register = async (req: Request, res: Response) => {
             return res.status(400).json({ message: error.errors[0].message });
         }
 
-        console.error("Registration error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -197,7 +194,103 @@ export const login = async (req: Request, res: Response) => {
             return res.status(400).json({ message: error.errors[0].message });
         }
 
-        console.error("Login error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+const updateProfileSchema = z.object({
+    name: z.string().min(3, "Name must be at least 3 characters"),
+    phone: z.string().min(1, "Phone number is required"),
+});
+
+const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+        .string()
+        .min(6, "New password must be at least 6 characters"),
+});
+
+export const updateProfile = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const { name, phone } = updateProfileSchema.parse(req.body);
+
+        const result = await pool.query(
+            `UPDATE users SET name = $1, phone = $2 WHERE id = $3 
+             RETURNING id, name, email, phone, role`,
+            [name, phone, userId]
+        );
+
+        if (!result.rowCount || result.rowCount === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json({
+            message: "Profile updated successfully",
+            user: result.rows[0],
+        });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: error.errors[0].message });
+        }
+
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const changePassword = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const { currentPassword, newPassword } = changePasswordSchema.parse(
+            req.body
+        );
+
+        // get current user with password hash
+        const userResult = await pool.query(
+            `SELECT id, password_hash FROM users WHERE id = $1`,
+            [userId]
+        );
+
+        if (!userResult.rowCount || userResult.rowCount === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const user = userResult.rows[0];
+
+        const validPassword = await bcrypt.compare(
+            currentPassword,
+            user.password_hash
+        );
+
+        if (!validPassword) {
+            return res
+                .status(400)
+                .json({ message: "Current password is incorrect" });
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+        await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [
+            hashedNewPassword,
+            userId,
+        ]);
+
+        res.json({ message: "Password changed successfully" });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: error.errors[0].message });
+        }
+
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -211,7 +304,7 @@ export const verifyToken = async (req: Request, res: Response) => {
         }
 
         const result = await pool.query(
-            `SELECT id, name, email, role FROM users WHERE id = $1`,
+            `SELECT id, name, email, phone, role FROM users WHERE id = $1`,
             [userId]
         );
 
@@ -221,7 +314,6 @@ export const verifyToken = async (req: Request, res: Response) => {
 
         res.json({ user: result.rows[0] });
     } catch (error) {
-        console.error("Token verification error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };

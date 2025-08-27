@@ -23,7 +23,7 @@ const RegisterPage = () => {
             [name]: value,
         });
 
-        // Clear error when user types
+        // clear error when user types
         if (errors[name]) {
             setErrors({
                 ...errors,
@@ -93,7 +93,6 @@ const RegisterPage = () => {
             toast.error(
                 error.message || "Failed to send OTP. Please try again."
             );
-            console.error("OTP send error:", error);
         } finally {
             setIsLoading(false);
         }
@@ -184,6 +183,7 @@ const RegisterPage = () => {
                                         errors.phone ? "border-error" : ""
                                     }`}
                                     placeholder="1234567890"
+                                    required
                                 />
                             </div>
                             {errors.phone && (

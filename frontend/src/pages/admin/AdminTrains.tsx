@@ -9,7 +9,7 @@ import {
     MapPin,
     Train as TrainIcon,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 
 const classMappings: Record<string, string> = {
     SL: "Sleeper",
@@ -24,12 +24,12 @@ interface Train {
     name: string;
     source: string;
     destination: string;
-    departure_time: string; // match the column name in your DB
+    departure_time: string;
     arrival_time: string;
     running_days: string[];
     classes: string[];
 }
-const API_URL = "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const getHeaders = () => {
     const token = localStorage.getItem("token");
@@ -62,7 +62,7 @@ const AdminTrains = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/trains/${selectedTrain.id}`,
+                `${API_URL}/trains/${selectedTrain.id}`,
                 {
                     method: "DELETE",
                     headers: getHeaders(),

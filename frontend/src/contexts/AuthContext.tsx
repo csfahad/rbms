@@ -7,6 +7,7 @@ interface User {
     id: string;
     name: string;
     email: string;
+    phone?: string;
     role: "user" | "admin";
 }
 
@@ -16,6 +17,7 @@ interface AuthContextType {
     isAdmin: boolean;
     login: (email: string, password: string) => Promise<void>;
     loginWithData: (user: User, token: string) => void;
+    updateUser: (user: User) => void;
     register: (name: string, email: string, password: string) => Promise<void>;
     logout: () => void;
 }
@@ -43,7 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                     if (data.user) {
                         setUser(data.user);
 
-                        // Redirect from login/register pages if already authenticated
+                        // redirect from login/register pages if already authenticated
                         if (
                             ["/login", "/register"].includes(location.pathname)
                         ) {
@@ -107,6 +109,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(userData);
     };
 
+    const updateUser = (userData: User) => {
+        setUser(userData);
+    };
+
     const logout = () => {
         localStorage.removeItem("token");
         setUser(null);
@@ -148,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 isAdmin: user?.role === "admin",
                 login,
                 loginWithData,
+                updateUser,
                 register,
                 logout,
             }}

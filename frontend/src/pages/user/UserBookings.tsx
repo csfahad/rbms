@@ -6,7 +6,7 @@ import {
     cancelBooking,
     Booking,
 } from "../../services/bookingService";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import {
     Calendar,
     Clock,
@@ -47,13 +47,13 @@ const UserBookings = () => {
             if (!user) return;
 
             try {
-                const userBookings = await getUserBookings(user.id); // Flat array of bookings
+                const userBookings = await getUserBookings(user.id); // flat array of bookings
                 setBookings(userBookings);
 
-                // Filter by selected filter type
+                // filter by selected filter type
                 applyFilter(userBookings, filter);
 
-                // Handle highlight for newly created booking via URL param
+                // handling highlight for newly created booking via URL param
                 const params = new URLSearchParams(location.search);
                 const newBookingId = params.get("new");
 
@@ -87,7 +87,7 @@ const UserBookings = () => {
         return new Date(d.getFullYear(), d.getMonth(), d.getDate()); // time zeroed out
     };
 
-    // Helper function to apply the current filter
+    // helper function to apply the current filter
     const applyFilter = (allBookings: Booking[], filterType: string) => {
         const today = normalizeDate(new Date());
         let filtered: Booking[];

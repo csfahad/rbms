@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { toast } from "react-toastify";
+import { toast } from "react-hot-toast";
 import { Mail, Lock, LogIn } from "lucide-react";
 
 const LoginPage = () => {
@@ -19,9 +19,8 @@ const LoginPage = () => {
             await login(email, password);
             toast.success("Login successful!");
             navigate("/");
-        } catch (error) {
-            toast.error("Invalid email or password");
-            console.error("Login error:", error);
+        } catch (error: any) {
+            toast.error(error.message || "Invalid email or password");
         } finally {
             setIsLoading(false);
         }
@@ -29,7 +28,11 @@ const LoginPage = () => {
 
     // Demo login credentials info
     const demoCredentials = [
-        { type: "User", email: "user@example.com", password: "password123" },
+        {
+            type: "User",
+            email: "user@railbuddy.com",
+            password: "savory@railbuddy",
+        },
     ];
 
     return (
