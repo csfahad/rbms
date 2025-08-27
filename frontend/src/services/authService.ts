@@ -95,6 +95,44 @@ export const logout = () => {
     localStorage.removeItem("token");
 };
 
+export const forgotPassword = async (email: string) => {
+    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to send password reset OTP");
+    }
+
+    return response.json();
+};
+
+export const resetPassword = async (
+    email: string,
+    otp: string,
+    newPassword: string
+) => {
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otp, newPassword }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Password reset failed");
+    }
+
+    return response.json();
+};
+
 export const authService = {
     sendOtp,
     verifyOtp,
@@ -102,4 +140,6 @@ export const authService = {
     login,
     verifyToken,
     logout,
+    forgotPassword,
+    resetPassword,
 };

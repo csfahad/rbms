@@ -81,7 +81,6 @@ export const verifyOtpAndRegister = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "User already exists" });
         }
 
-        // hash password and create user
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const result = await pool.query(
@@ -315,5 +314,81 @@ export const verifyToken = async (req: Request, res: Response) => {
         res.json({ user: result.rows[0] });
     } catch (error) {
         res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+const forgotPasswordSchema = z.object({
+    email: z.string().email("Invalid email address"),
+});
+
+const resetPasswordSchema = z.object({
+    email: z.string().email("Invalid email address"),
+    otp: z.string().length(6, "OTP must be 6 digits"),
+    newPassword: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export const forgotPassword = async (req: Request, res: Response) => {
+    try {
+        const { email } = forgotPasswordSchema.parse(req.body);
+
+        const result = await pool.query(
+            `SELECT id, email FROM users WHERE email = $1`,
+            [email]
+        );
+
+        if (!result.rowCount || result.rowCount === 0) {
+            return res
+                .status(404)
+                .json({ message: "User with this email does not exist" });
+        }
+
+        const otp = generateOTP();
+        storeOTP(email, otp);
+
+        await sendOTPEmail(email, otp, "password-reset");
+
+        res.json({ message: "Password reset OTP sent to your email" });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: error.errors[0].message });
+        }
+
+        res.status(500).json({ message: "Failed to send password reset OTP" });
+    }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+    try {
+        const { email, otp, newPassword } = resetPasswordSchema.parse(req.body);
+
+        const isValidOTP = verifyOTP(email, otp);
+        if (!isValidOTP) {
+            return res.status(400).json({ message: "Invalid or expired OTP" });
+        }
+
+        const userResult = await pool.query(
+            `SELECT id FROM users WHERE email = $1`,
+            [email]
+        );
+
+        if (!userResult.rowCount || userResult.rowCount === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        await pool.query(
+            `UPDATE users SET password_hash = $1 WHERE email = $2`,
+            [hashedPassword, email]
+        );
+
+        res.json({ message: "Password reset successfully" });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ message: error.errors[0].message });
+        }
+
+        res.status(500).json({ message: "Password reset failed" });
     }
 };

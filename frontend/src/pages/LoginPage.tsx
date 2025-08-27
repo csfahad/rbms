@@ -112,12 +112,12 @@ const LoginPage = () => {
                         </div>
 
                         <div className="text-sm">
-                            <a
-                                href="#"
-                                className="text-primary hover:text-primary-light"
+                            <Link
+                                to="/forgot-password"
+                                className="text-sm text-primary hover:text-primary-light transition-colors"
                             >
                                 Forgot your password?
-                            </a>
+                            </Link>
                         </div>
                     </div>
 

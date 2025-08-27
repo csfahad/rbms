@@ -63,7 +63,7 @@ const createTransporter = () => {
             });
 
         default:
-            // Development/Testing with Ethereal
+            // development/testing with ethereal
             return nodemailer.createTransport({
                 host: "smtp.ethereal.email",
                 port: 587,
@@ -78,7 +78,8 @@ const createTransporter = () => {
 
 export const sendOTPEmail = async (
     email: string,
-    otp: string
+    otp: string,
+    type: "registration" | "password-reset" = "registration"
 ): Promise<void> => {
     if (process.env.SKIP_EMAIL_SENDING === "true") {
         console.log(`\n OTP for ${email}: ${otp}\n`);
@@ -91,7 +92,7 @@ export const sendOTPEmail = async (
 
     // handling Resend separately since it uses its own SDK
     if (emailProvider.toLowerCase() === "resend") {
-        await sendWithResend(email, otp);
+        await sendWithResend(email, otp, type);
         return;
     }
 
@@ -105,8 +106,11 @@ export const sendOTPEmail = async (
     const mailOptions = {
         from: process.env.FROM_EMAIL || '"RailBuddy" <noreply@railbuddy.com>',
         to: email,
-        subject: "Your RailBuddy Verification Code",
-        html: generateOTPEmailHTML(otp),
+        subject:
+            type === "password-reset"
+                ? "Reset Your RailBuddy Password"
+                : "Your RailBuddy Verification Code",
+        html: generateOTPEmailHTML(otp, type),
     };
 
     try {
@@ -123,7 +127,11 @@ export const sendOTPEmail = async (
 };
 
 // Resend-specific email sending function
-const sendWithResend = async (email: string, otp: string): Promise<void> => {
+const sendWithResend = async (
+    email: string,
+    otp: string,
+    type: "registration" | "password-reset" = "registration"
+): Promise<void> => {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     try {
@@ -131,8 +139,11 @@ const sendWithResend = async (email: string, otp: string): Promise<void> => {
             from:
                 process.env.FROM_EMAIL || "RailBuddy <noreply@yourdomain.com>",
             to: [email],
-            subject: "Your RailBuddy Verification Code",
-            html: generateOTPEmailHTML(otp),
+            subject:
+                type === "password-reset"
+                    ? "Reset Your RailBuddy Password"
+                    : "Your RailBuddy Verification Code",
+            html: generateOTPEmailHTML(otp, type),
         });
 
         if (error) {
@@ -148,7 +159,12 @@ const sendWithResend = async (email: string, otp: string): Promise<void> => {
 };
 
 // Email template function
-const generateOTPEmailHTML = (otp: string): string => {
+const generateOTPEmailHTML = (
+    otp: string,
+    type: "registration" | "password-reset" = "registration"
+): string => {
+    const isPasswordReset = type === "password-reset";
+
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
@@ -157,9 +173,19 @@ const generateOTPEmailHTML = (otp: string): string => {
             </div>
             
             <div style="background-color: #f8fafc; padding: 30px; border-radius: 8px; text-align: center;">
-                <h2 style="color: #1f2937; margin-bottom: 20px;">Verify Your Email Address</h2>
+                <h2 style="color: #1f2937; margin-bottom: 20px;">
+                    ${
+                        isPasswordReset
+                            ? "Reset Your Password"
+                            : "Verify Your Email Address"
+                    }
+                </h2>
                 <p style="color: #4b5563; margin-bottom: 30px;">
-                    Enter the following 6-digit code to complete your account registration:
+                    ${
+                        isPasswordReset
+                            ? "Enter the following 6-digit code to reset your password:"
+                            : "Enter the following 6-digit code to complete your account registration:"
+                    }
                 </p>
                 
                 <div style="background-color: white; padding: 20px; border-radius: 6px; border: 2px dashed #e5e7eb; margin: 20px 0;">
@@ -173,7 +199,11 @@ const generateOTPEmailHTML = (otp: string): string => {
             
             <div style="margin-top: 30px; text-align: center;">
                 <p style="color: #6b7280; font-size: 14px;">
-                    If you didn't request this code, please ignore this email.
+                    ${
+                        isPasswordReset
+                            ? "If you didn't request a password reset, please ignore this email."
+                            : "If you didn't request this code, please ignore this email."
+                    }
                 </p>
                 <p style="color: #6b7280; font-size: 14px;">
                     © ${new Date().getFullYear()} RailBuddy. All rights reserved.

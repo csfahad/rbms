@@ -7,6 +7,8 @@ import {
     verifyOtpAndRegister,
     updateProfile,
     changePassword,
+    forgotPassword,
+    resetPassword,
 } from "../controllers/auth.controller";
 import { authenticateToken } from "../middleware/auth";
 
@@ -16,6 +18,8 @@ router.post("/register", register);
 router.post("/login", login);
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtpAndRegister);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 router.get("/verify", authenticateToken, verifyToken);
 router.put("/update-profile", authenticateToken, updateProfile);
 router.put("/change-password", authenticateToken, changePassword);
