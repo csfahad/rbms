@@ -10,6 +10,7 @@ import {
     Train as TrainIcon,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { apiRequest } from "../../services/api";
 
 const classMappings: Record<string, string> = {
     SL: "Sleeper",
@@ -29,15 +30,6 @@ interface Train {
     running_days: string[];
     classes: string[];
 }
-const API_URL = import.meta.env.VITE_API_URL;
-
-const getHeaders = () => {
-    const token = localStorage.getItem("token");
-    return {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-};
 
 const AdminTrains = () => {
     const [trains, setTrains] = useState<Train[]>([]);
@@ -61,15 +53,9 @@ const AdminTrains = () => {
         if (!selectedTrain) return;
 
         try {
-            const response = await fetch(
-                `${API_URL}/trains/${selectedTrain.id}`,
-                {
-                    method: "DELETE",
-                    headers: getHeaders(),
-                }
-            );
-
-            if (!response.ok) throw new Error("Failed to delete train");
+            await apiRequest(`/trains/${selectedTrain.id}`, {
+                method: "DELETE",
+            });
 
             setTrains(trains.filter((train) => train.id !== selectedTrain.id));
         } catch (err: unknown) {
@@ -83,14 +69,7 @@ const AdminTrains = () => {
     useEffect(() => {
         const fetchTrains = async () => {
             try {
-                const response = await fetch(`${API_URL}/trains`, {
-                    method: "GET",
-                    headers: getHeaders(),
-                });
-                if (!response.ok) {
-                    throw new Error("Failed to fetch trains");
-                }
-                const data = await response.json();
+                const data = await apiRequest("/trains");
                 setTrains(data);
             } catch (err: unknown) {
                 if (err instanceof Error) {

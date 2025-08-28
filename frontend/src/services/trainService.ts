@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:5000/api";
+import { apiRequest } from "./api";
 
 export type TrainClass = "SL" | "3A" | "2A" | "1A";
 
@@ -31,55 +31,22 @@ export interface Train {
     availability: ClassAvailability[];
 }
 
-const getHeaders = () => {
-    const token = localStorage.getItem("token");
-    return {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
-};
-
 export const createTrain = async (trainData: any) => {
-    const response = await fetch(`${API_URL}/trains`, {
+    return await apiRequest("/trains", {
         method: "POST",
-        headers: getHeaders(),
         body: JSON.stringify(trainData),
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create train");
-    }
-
-    return response.json();
 };
 
 export const updateTrain = async (id: string, trainData: any) => {
-    const response = await fetch(`${API_URL}/trains/${id}`, {
+    return await apiRequest(`/trains/${id}`, {
         method: "PUT",
-        headers: getHeaders(),
         body: JSON.stringify(trainData),
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update train");
-    }
-
-    return response.json();
 };
 
 export const getTrainById = async (id: string) => {
-    const response = await fetch(`${API_URL}/trains/${id}`, {
-        headers: getHeaders(),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to fetch train");
-    }
-
-    return response.json();
+    return await apiRequest(`/trains/${id}`);
 };
 
 export const searchTrains = async (
@@ -87,29 +54,13 @@ export const searchTrains = async (
     destination: string,
     date: string
 ) => {
-    const response = await fetch(
-        `${API_URL}/trains/search?source=${source}&destination=${destination}&date=${date}`,
-        { headers: getHeaders() }
+    return await apiRequest(
+        `/trains/search?source=${source}&destination=${destination}&date=${date}`
     );
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to search trains");
-    }
-    return response.json();
 };
 
 export const getStationSuggestions = async (
     query: string
 ): Promise<Station[]> => {
-    const response = await fetch(`${API_URL}/trains/stations?query=${query}`, {
-        headers: getHeaders(),
-    });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to fetch stations");
-    }
-
-    return response.json();
+    return await apiRequest(`/trains/stations?query=${query}`);
 };

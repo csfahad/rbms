@@ -18,7 +18,6 @@ const VerifyOtpPage: React.FC = () => {
     const registrationData = location.state?.registrationData;
 
     useEffect(() => {
-        // if no email or registration data, redirect to register
         if (!email || !registrationData) {
             navigate("/register");
             return;
@@ -97,7 +96,7 @@ const VerifyOtpPage: React.FC = () => {
                 registrationData
             );
             toast.success("Account created successfully!");
-            loginWithData(response.user, response.token);
+            loginWithData(response.user);
             navigate("/user/dashboard");
         } catch (error: any) {
             toast.error(error.message || "Invalid OTP. Please try again.");

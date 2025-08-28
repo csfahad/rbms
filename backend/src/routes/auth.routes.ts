@@ -9,6 +9,7 @@ import {
     changePassword,
     forgotPassword,
     resetPassword,
+    logout,
 } from "../controllers/auth.controller";
 import { authenticateToken } from "../middleware/auth";
 
@@ -16,6 +17,7 @@ const router = Router();
 
 router.post("/register", register);
 router.post("/login", login);
+router.post("/logout", logout);
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtpAndRegister);
 router.post("/forgot-password", forgotPassword);

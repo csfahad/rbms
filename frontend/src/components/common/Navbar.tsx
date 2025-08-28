@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 import Logo from "./Logo";
@@ -7,11 +7,9 @@ import Logo from "./Logo";
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { isAuthenticated, isAdmin, user, logout } = useAuth();
-    const navigate = useNavigate();
 
-    const handleLogout = () => {
-        logout();
-        navigate("/");
+    const handleLogout = async () => {
+        await logout();
         setIsMenuOpen(false);
     };
 

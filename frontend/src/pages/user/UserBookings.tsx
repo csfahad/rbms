@@ -507,18 +507,6 @@ const UserBookings = () => {
                                         {selectedBooking.status ===
                                             "Confirmed" && (
                                             <>
-                                                <button
-                                                    onClick={() =>
-                                                        downloadTicket(
-                                                            selectedBooking
-                                                        )
-                                                    }
-                                                    className="btn btn-secondary flex items-center justify-center"
-                                                >
-                                                    <Download className="h-5 w-5 mr-2" />
-                                                    Download Ticket
-                                                </button>
-
                                                 {new Date(
                                                     selectedBooking.travel_date
                                                 ) > new Date() && (
@@ -529,7 +517,7 @@ const UserBookings = () => {
                                                             )
                                                         }
                                                         disabled={isCancelling}
-                                                        className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 flex items-center justify-center"
+                                                        className="btn btn-accent flex items-center justify-center"
                                                     >
                                                         {isCancelling ? (
                                                             <svg
@@ -558,6 +546,18 @@ const UserBookings = () => {
                                                         Cancel Booking
                                                     </button>
                                                 )}
+
+                                                <button
+                                                    onClick={() =>
+                                                        downloadTicket(
+                                                            selectedBooking
+                                                        )
+                                                    }
+                                                    className="btn btn-primary flex items-center justify-center"
+                                                >
+                                                    <Download className="h-5 w-5 mr-2" />
+                                                    Download Ticket
+                                                </button>
                                             </>
                                         )}
                                     </div>

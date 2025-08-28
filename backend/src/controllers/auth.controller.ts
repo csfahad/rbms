@@ -98,7 +98,15 @@ export const verifyOtpAndRegister = async (req: Request, res: Response) => {
             { expiresIn: "24h" }
         );
 
-        res.status(201).json({ user, token });
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 24 * 60 * 60 * 1000,
+            path: "/", // ensure cookie is available across all paths
+        });
+
+        res.status(201).json({ user });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ message: error.errors[0].message });
@@ -138,7 +146,15 @@ export const register = async (req: Request, res: Response) => {
             { expiresIn: "24h" }
         );
 
-        res.status(201).json({ user, token });
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 24 * 60 * 60 * 1000,
+            path: "/", // ensure cookie is available across all paths
+        });
+
+        res.status(201).json({ user });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ message: error.errors[0].message });
@@ -179,6 +195,14 @@ export const login = async (req: Request, res: Response) => {
             { expiresIn: "24h" }
         );
 
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 24 * 60 * 60 * 1000,
+            path: "/", // ensure cookie is available across all paths
+        });
+
         res.json({
             user: {
                 id: user.id,
@@ -186,7 +210,6 @@ export const login = async (req: Request, res: Response) => {
                 email: user.email,
                 role: user.role,
             },
-            token,
         });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -310,7 +333,6 @@ export const verifyToken = async (req: Request, res: Response) => {
         if (!result.rowCount || result.rowCount === 0) {
             return res.status(404).json({ message: "User not found" });
         }
-
         res.json({ user: result.rows[0] });
     } catch (error) {
         res.status(500).json({ message: "Internal server error" });
@@ -390,5 +412,20 @@ export const resetPassword = async (req: Request, res: Response) => {
         }
 
         res.status(500).json({ message: "Password reset failed" });
+    }
+};
+
+export const logout = async (req: Request, res: Response) => {
+    try {
+        res.clearCookie("token", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            path: "/",
+        });
+
+        res.json({ message: "Logged out successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Logout failed" });
     }
 };

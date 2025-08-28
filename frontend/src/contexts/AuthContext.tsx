@@ -1,7 +1,13 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, {
+    createContext,
+    useState,
+    useContext,
+    useEffect,
+    useCallback,
+} from "react";
+import { flushSync } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { apiRequest } from "../services/api";
 
 interface User {
     id: string;
@@ -16,7 +22,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     isAdmin: boolean;
     login: (email: string, password: string) => Promise<void>;
-    loginWithData: (user: User, token: string) => void;
+    loginWithData: (user: User) => void;
     updateUser: (user: User) => void;
     register: (name: string, email: string, password: string) => Promise<void>;
     logout: () => void;
@@ -33,79 +39,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const location = useLocation();
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (token) {
-            fetch(`${API_URL}/auth/verify`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.user) {
-                        setUser(data.user);
+        // try to verify if user is authenticated via HTTP-only cookie
+        apiRequest("/auth/verify")
+            .then((data) => {
+                if (data.user) {
+                    setUser(data.user);
 
-                        // redirect from login/register pages if already authenticated
-                        if (
-                            ["/login", "/register"].includes(location.pathname)
-                        ) {
-                            navigate("/");
-                        }
-                    } else {
-                        localStorage.removeItem("token");
+                    // redirect from login/register pages if already authenticated
+                    if (["/login", "/register"].includes(location.pathname)) {
+                        navigate("/");
                     }
-                })
-                .catch(() => {
-                    localStorage.removeItem("token");
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
-        } else {
-            setIsLoading(false);
-        }
+                }
+            })
+            .catch((error) => {
+                console.error("Token verification failed:", error);
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
     }, [navigate, location]);
 
     const login = async (email: string, password: string) => {
-        const response = await fetch(`${API_URL}/auth/login`, {
+        const data = await apiRequest("/auth/login", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
             body: JSON.stringify({ email, password }),
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Login failed");
-        }
-
-        const data = await response.json();
-        localStorage.setItem("token", data.token);
         setUser(data.user);
     };
 
     const register = async (name: string, email: string, password: string) => {
-        const response = await fetch(`${API_URL}/auth/register`, {
+        const data = await apiRequest("/auth/register", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
             body: JSON.stringify({ name, email, password }),
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || "Registration failed");
-        }
-
-        const data = await response.json();
-        localStorage.setItem("token", data.token);
         setUser(data.user);
     };
 
-    const loginWithData = (userData: User, token: string) => {
-        localStorage.setItem("token", token);
+    const loginWithData = (userData: User) => {
+        // with HTTP-only cookies, we don't store the token client-side
+        // the server should have already set the HTTP-only cookie
         setUser(userData);
     };
 
@@ -113,11 +85,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(userData);
     };
 
-    const logout = () => {
-        localStorage.removeItem("token");
-        setUser(null);
+    const logout = useCallback(async () => {
+        try {
+            await apiRequest("/auth/logout", {
+                method: "POST",
+            });
+        } catch (error) {
+            console.error("Logout error:", error);
+        }
+
+        // force immediate state update
+        flushSync(() => {
+            setUser(null);
+        });
+
         navigate("/login");
-    };
+    }, [navigate]);
 
     if (isLoading) {
         return (

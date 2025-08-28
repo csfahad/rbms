@@ -50,6 +50,10 @@
         @apply bg-accent text-white hover:bg-accent/90 focus:ring-accent;
     }
 
+    .btn-accent-secondary {
+        @apply bg-white text-accent border border-accent hover:bg-gray-50 focus:ring-accent;
+    }
+
     .card {
         @apply bg-white rounded-lg shadow-md overflow-hidden transition-shadow duration-300 hover:shadow-lg;
     }

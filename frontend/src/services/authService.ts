@@ -1,20 +1,10 @@
-const API_URL = import.meta.env.VITE_API_URL;
+import { apiRequest } from "./api";
 
 export const sendOtp = async (email: string) => {
-    const response = await fetch(`${API_URL}/auth/send-otp`, {
+    return await apiRequest("/auth/send-otp", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify({ email }),
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to send OTP");
-    }
-
-    return response.json();
 };
 
 export const verifyOtp = async (
@@ -22,20 +12,10 @@ export const verifyOtp = async (
     otp: string,
     registrationData: any
 ) => {
-    const response = await fetch(`${API_URL}/auth/verify-otp`, {
+    return await apiRequest("/auth/verify-otp", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify({ email, otp, ...registrationData }),
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "OTP verification failed");
-    }
-
-    return response.json();
 };
 
 export const register = async (
@@ -44,72 +24,34 @@ export const register = async (
     password: string,
     phone?: string
 ) => {
-    const response = await fetch(`${API_URL}/auth/register`, {
+    return await apiRequest("/auth/register", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify({ name, email, password, phone }),
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Registration failed");
-    }
-
-    return response.json();
 };
 
 export const login = async (email: string, password: string) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    return await apiRequest("/auth/login", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify({ email, password }),
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Login failed");
-    }
-
-    return response.json();
 };
 
-export const verifyToken = async (token: string) => {
-    const response = await fetch(`${API_URL}/auth/verify`, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
+export const verifyToken = async () => {
+    return await apiRequest("/auth/verify");
+};
+
+export const logout = async () => {
+    return await apiRequest("/auth/logout", {
+        method: "POST",
     });
-
-    if (!response.ok) {
-        throw new Error("Invalid token");
-    }
-
-    return response.json();
-};
-
-export const logout = () => {
-    localStorage.removeItem("token");
 };
 
 export const forgotPassword = async (email: string) => {
-    const response = await fetch(`${API_URL}/auth/forgot-password`, {
+    return await apiRequest("/auth/forgot-password", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify({ email }),
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to send password reset OTP");
-    }
-
-    return response.json();
 };
 
 export const resetPassword = async (
@@ -117,20 +59,10 @@ export const resetPassword = async (
     otp: string,
     newPassword: string
 ) => {
-    const response = await fetch(`${API_URL}/auth/reset-password`, {
+    return await apiRequest("/auth/reset-password", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         body: JSON.stringify({ email, otp, newPassword }),
     });
-
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Password reset failed");
-    }
-
-    return response.json();
 };
 
 export const authService = {
