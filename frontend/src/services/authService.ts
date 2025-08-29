@@ -54,15 +54,17 @@ export const forgotPassword = async (email: string) => {
     });
 };
 
-export const resetPassword = async (
-    email: string,
-    otp: string,
-    newPassword: string
-) => {
+export const resetPassword = async (token: string, newPassword: string) => {
     return await apiRequest("/auth/reset-password", {
         method: "POST",
-        body: JSON.stringify({ email, otp, newPassword }),
+        body: JSON.stringify({ token, newPassword }),
     });
+};
+
+export const verifyResetToken = async (token: string) => {
+    return await apiRequest(
+        `/auth/verify-reset-token?token=${encodeURIComponent(token)}`
+    );
 };
 
 export const authService = {
@@ -74,4 +76,5 @@ export const authService = {
     logout,
     forgotPassword,
     resetPassword,
+    verifyResetToken,
 };

@@ -212,3 +212,127 @@ const generateOTPEmailHTML = (
         </div>
     `;
 };
+
+// Password reset link email function
+export const sendPasswordResetEmail = async (
+    email: string,
+    resetLink: string
+): Promise<void> => {
+    if (process.env.SKIP_EMAIL_SENDING === "true") {
+        console.log(`\n Password reset link for ${email}: ${resetLink}\n`);
+        console.log(`Click this link to reset your password: ${resetLink}`);
+        console.log(`Email sending is disabled (SKIP_EMAIL_SENDING=true)\n`);
+        return;
+    }
+
+    const emailProvider = process.env.EMAIL_PROVIDER || "gmail";
+
+    // handling Resend separately since it uses its own SDK
+    if (emailProvider.toLowerCase() === "resend") {
+        await sendPasswordResetWithResend(email, resetLink);
+        return;
+    }
+
+    // handling other providers with nodemailer
+    const transporter = createTransporter();
+
+    if (!transporter) {
+        throw new Error("Failed to create email transporter");
+    }
+
+    const mailOptions = {
+        from: process.env.FROM_EMAIL || '"RailBuddy" <noreply@railbuddy.com>',
+        to: email,
+        subject: "Reset Your RailBuddy Password",
+        html: generatePasswordResetEmailHTML(resetLink),
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log("Password reset email sent:", info.messageId);
+
+        if (process.env.NODE_ENV === "development") {
+            console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+        }
+    } catch (error) {
+        console.error("Error sending password reset email:", error);
+        throw new Error("Failed to send password reset email");
+    }
+};
+
+// Resend-specific password reset email function
+const sendPasswordResetWithResend = async (
+    email: string,
+    resetLink: string
+): Promise<void> => {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from:
+                process.env.FROM_EMAIL || "RailBuddy <noreply@yourdomain.com>",
+            to: [email],
+            subject: "Reset Your RailBuddy Password",
+            html: generatePasswordResetEmailHTML(resetLink),
+        });
+
+        if (error) {
+            console.error("Resend error:", error);
+            throw new Error("Failed to send password reset email via Resend");
+        }
+
+        console.log("Password reset email sent via Resend:", data?.id);
+    } catch (error) {
+        console.error("Error sending password reset email via Resend:", error);
+        throw new Error("Failed to send password reset email");
+    }
+};
+
+// Password reset email template
+const generatePasswordResetEmailHTML = (resetLink: string): string => {
+    return `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #2563eb; margin: 0;">RailBuddy</h1>
+                <p style="color: #6b7280; margin: 5px 0;">Your Railway Booking Companion</p>
+            </div>
+            
+            <div style="background-color: #f8fafc; padding: 30px; border-radius: 8px;">
+                <h2 style="color: #1f2937; margin-bottom: 20px; text-align: center;">
+                    Reset Your Password
+                </h2>
+                <p style="color: #4b5563; margin-bottom: 30px; text-align: center;">
+                    We received a request to reset your password. Click the button below to create a new password:
+                </p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="${resetLink}" style="background-color: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                        Reset Password
+                    </a>
+                </div>
+                
+                <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                    This link will expire in 1 hour for security reasons.
+                </p>
+                
+                <div style="background-color: #fef3c7; padding: 15px; border-radius: 6px; margin-top: 20px;">
+                    <p style="color: #92400e; font-size: 14px; margin: 0;">
+                        <strong>Security tip:</strong> If you can't click the button above, copy and paste this link into your browser:
+                    </p>
+                    <p style="color: #92400e; font-size: 12px; word-break: break-all; margin: 5px 0 0 0;">
+                        ${resetLink}
+                    </p>
+                </div>
+            </div>
+            
+            <div style="margin-top: 30px; text-align: center;">
+                <p style="color: #6b7280; font-size: 14px;">
+                    If you didn't request a password reset, please ignore this email. Your password will remain unchanged.
+                </p>
+                <p style="color: #6b7280; font-size: 14px;">
+                    © ${new Date().getFullYear()} RailBuddy. All rights reserved.
+                </p>
+            </div>
+        </div>
+    `;
+};

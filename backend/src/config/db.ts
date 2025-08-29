@@ -87,6 +87,28 @@ export const initializeDatabase = async () => {
       )
     `);
 
+        await pool.query(`
+      CREATE TABLE IF NOT EXISTS used_reset_tokens (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        token_hash VARCHAR(255) UNIQUE NOT NULL,
+        user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+        used_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+      )
+    `);
+
+        // create index for performance on token lookups
+        await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_used_reset_tokens_hash 
+      ON used_reset_tokens(token_hash)
+    `);
+
+        // create index for cleanup of expired tokens
+        await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_used_reset_tokens_expires 
+      ON used_reset_tokens(expires_at)
+    `);
+
         console.log("Database schema initialized successfully");
     } catch (error) {
         console.error("Error initializing database schema:", error);

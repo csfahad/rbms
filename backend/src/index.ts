@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes";
 import trainRoutes from "./routes/train.routes";
 import bookingRoutes from "./routes/booking.routes";
 import { authenticateToken } from "./middleware/auth";
+import { cleanupExpiredTokens } from "./utils/resetToken";
 
 dotenv.config();
 
@@ -30,4 +31,13 @@ app.use("/api/bookings", authenticateToken, bookingRoutes);
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
+
+    // Run cleanup of expired reset tokens every hour
+    setInterval(async () => {
+        try {
+            await cleanupExpiredTokens();
+        } catch (error) {
+            console.error("Error during token cleanup:", error);
+        }
+    }, 60 * 60 * 1000); //
 });

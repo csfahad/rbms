@@ -31,7 +31,7 @@ const LoginPage = () => {
         {
             type: "User",
             email: "user@railbuddy.com",
-            password: "savory@railbuddy",
+            password: "railbuddy@user",
         },
     ];
 

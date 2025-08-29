@@ -1,13 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Mail } from "lucide-react";
 import { authService } from "../services/authService";
+import { useAuth } from "../contexts/AuthContext";
 
 const ForgotPasswordPage = () => {
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate("/");
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,10 +29,9 @@ const ForgotPasswordPage = () => {
 
         try {
             await authService.forgotPassword(email);
-            toast.success("Password reset OTP sent to your email!");
-            navigate("/reset-password", { state: { email } });
+            toast.success("Password reset link sent to your email!");
         } catch (error: any) {
-            toast.error(error.message || "Failed to send password reset OTP");
+            toast.error(error.message || "Failed to send password reset link");
         } finally {
             setIsLoading(false);
         }
@@ -38,7 +45,7 @@ const ForgotPasswordPage = () => {
                         Forgot Password
                     </h2>
                     <p className="mt-2 text-gray-600">
-                        Enter your email address and we'll send you an OTP to
+                        Enter your email address and we'll send you a link to
                         reset your password
                     </p>
                 </div>

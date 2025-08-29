@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { generateOTP, storeOTP, verifyOTP } from "../utils/otp";
-import { sendOTPEmail } from "../services/emailService";
+import { sendOTPEmail, sendPasswordResetEmail } from "../services/emailService";
+import { isTokenUsed, markTokenAsUsed } from "../utils/resetToken";
 
 const registerSchema = z.object({
     name: z.string().min(2, "Name must be at least 2 characters"),
@@ -344,8 +345,7 @@ const forgotPasswordSchema = z.object({
 });
 
 const resetPasswordSchema = z.object({
-    email: z.string().email("Invalid email address"),
-    otp: z.string().length(6, "OTP must be 6 digits"),
+    token: z.string().min(1, "Reset token is required"),
     newPassword: z.string().min(6, "Password must be at least 6 characters"),
 });
 
@@ -364,46 +364,84 @@ export const forgotPassword = async (req: Request, res: Response) => {
                 .json({ message: "User with this email does not exist" });
         }
 
-        const otp = generateOTP();
-        storeOTP(email, otp);
+        const user = result.rows[0];
 
-        await sendOTPEmail(email, otp, "password-reset");
+        // Generate a reset token (JWT with 1 hour expiry)
+        const resetToken = jwt.sign(
+            { userId: user.id, email: user.email, type: "password-reset" },
+            process.env.JWT_SECRET || "your-secret-key",
+            { expiresIn: "1h" }
+        );
 
-        res.json({ message: "Password reset OTP sent to your email" });
+        const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+        await sendPasswordResetEmail(email, resetLink);
+
+        res.json({ message: "Password reset link sent to your email" });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ message: error.errors[0].message });
         }
 
-        res.status(500).json({ message: "Failed to send password reset OTP" });
+        res.status(500).json({ message: "Failed to send password reset link" });
     }
 };
 
 export const resetPassword = async (req: Request, res: Response) => {
     try {
-        const { email, otp, newPassword } = resetPasswordSchema.parse(req.body);
+        const { token, newPassword } = resetPasswordSchema.parse(req.body);
 
-        const isValidOTP = verifyOTP(email, otp);
-        if (!isValidOTP) {
-            return res.status(400).json({ message: "Invalid or expired OTP" });
+        // check if token has already been used
+        const tokenAlreadyUsed = await isTokenUsed(token);
+        if (tokenAlreadyUsed) {
+            return res.status(400).json({
+                message:
+                    "This reset link has already been used. Please request a new password reset link.",
+            });
+        }
+
+        // verify the reset token
+        let decoded;
+        try {
+            decoded = jwt.verify(
+                token,
+                process.env.JWT_SECRET || "your-secret-key"
+            ) as any;
+
+            // check if it's a password reset token
+            if (decoded.type !== "password-reset") {
+                return res.status(400).json({ message: "Invalid reset token" });
+            }
+        } catch (error) {
+            return res
+                .status(400)
+                .json({ message: "Invalid or expired reset token" });
         }
 
         const userResult = await pool.query(
-            `SELECT id FROM users WHERE email = $1`,
-            [email]
+            `SELECT id FROM users WHERE id = $1 AND email = $2`,
+            [decoded.userId, decoded.email]
         );
 
         if (!userResult.rowCount || userResult.rowCount === 0) {
             return res.status(404).json({ message: "User not found" });
         }
 
+        // mark token as used BEFORE updating password
+        try {
+            await markTokenAsUsed(token, decoded.userId);
+        } catch (error) {
+            console.error("Error marking token as used:", error);
+            return res.status(500).json({ message: "Password reset failed" });
+        }
+
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-        await pool.query(
-            `UPDATE users SET password_hash = $1 WHERE email = $2`,
-            [hashedPassword, email]
-        );
+        await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [
+            hashedPassword,
+            decoded.userId,
+        ]);
 
         res.json({ message: "Password reset successfully" });
     } catch (error) {
@@ -412,6 +450,68 @@ export const resetPassword = async (req: Request, res: Response) => {
         }
 
         res.status(500).json({ message: "Password reset failed" });
+    }
+};
+
+export const verifyResetToken = async (req: Request, res: Response) => {
+    try {
+        const { token } = req.query;
+
+        if (!token) {
+            return res.status(400).json({ message: "Reset token is required" });
+        }
+
+        // check if token has already been used
+        const tokenAlreadyUsed = await isTokenUsed(token as string);
+        if (tokenAlreadyUsed) {
+            return res.status(400).json({
+                valid: false,
+                message:
+                    "This reset link has already been used. Please request a new password reset link.",
+            });
+        }
+
+        // verify the reset token
+        try {
+            const decoded = jwt.verify(
+                token as string,
+                process.env.JWT_SECRET || "your-secret-key"
+            ) as any;
+
+            // check if it's a password reset token
+            if (decoded.type !== "password-reset") {
+                return res.status(400).json({
+                    valid: false,
+                    message: "Invalid reset token",
+                });
+            }
+
+            // verify user still exists
+            const userResult = await pool.query(
+                `SELECT id, email FROM users WHERE id = $1 AND email = $2`,
+                [decoded.userId, decoded.email]
+            );
+
+            if (!userResult.rowCount || userResult.rowCount === 0) {
+                return res.status(404).json({
+                    valid: false,
+                    message: "User not found",
+                });
+            }
+
+            res.json({
+                valid: true,
+                email: decoded.email,
+                message: "Reset token is valid",
+            });
+        } catch (error) {
+            return res.status(400).json({
+                valid: false,
+                message: "Invalid or expired reset token",
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Token verification failed" });
     }
 };
 

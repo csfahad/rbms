@@ -39,14 +39,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const location = useLocation();
 
     useEffect(() => {
-        // try to verify if user is authenticated via HTTP-only cookie
         apiRequest("/auth/verify")
             .then((data) => {
                 if (data.user) {
                     setUser(data.user);
 
-                    // redirect from login/register pages if already authenticated
-                    if (["/login", "/register"].includes(location.pathname)) {
+                    if (
+                        [
+                            "/login",
+                            "/register",
+                            "/forgot-password",
+                            "/verify-otp",
+                        ].includes(location.pathname) ||
+                        location.pathname.startsWith("/reset-password")
+                    ) {
                         navigate("/");
                     }
                 }

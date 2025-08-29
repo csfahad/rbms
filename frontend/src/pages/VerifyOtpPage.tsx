@@ -11,11 +11,18 @@ const VerifyOtpPage: React.FC = () => {
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const navigate = useNavigate();
     const location = useLocation();
-    const { loginWithData } = useAuth();
+    const { loginWithData, isAuthenticated } = useAuth();
 
     // get email and registration data from navigation state
     const email = location.state?.email;
     const registrationData = location.state?.registrationData;
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate("/");
+            return;
+        }
+    }, [isAuthenticated, navigate]);
 
     useEffect(() => {
         if (!email || !registrationData) {
