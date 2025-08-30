@@ -167,9 +167,37 @@ const generateOTPEmailHTML = (
 
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #2563eb; margin: 0;">RailBuddy</h1>
-                <p style="color: #6b7280; margin: 5px 0;">Your Railway Booking Companion</p>
+            <!-- Header with Logo -->
+            <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center; border-radius: 12px; margin-bottom: 30px;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                    <!-- Logo SVG -->
+                    <svg width="36" height="36" viewBox="0 0 32 32" style="margin-right: 10px;">
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" />
+                                <stop offset="100%" stop-color="#e0e7ff" />
+                            </linearGradient>
+                        </defs>
+                        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#logoGradient)" />
+                        <g transform="translate(6, 10)">
+                            <rect x="2" y="4" width="16" height="4" fill="#2563eb" rx="2" />
+                            <circle cx="2" cy="6" r="2" fill="#2563eb" />
+                            <rect x="5" y="5" width="2" height="1" fill="white" rx="0.5" />
+                            <rect x="8" y="5" width="2" height="1" fill="white" rx="0.5" />
+                            <rect x="11" y="5" width="2" height="1" fill="white" rx="0.5" />
+                            <rect x="14" y="5" width="2" height="1" fill="white" rx="0.5" />
+                            <circle cx="6" cy="9" r="1" fill="#64748b" />
+                            <circle cx="10" cy="9" r="1" fill="#64748b" />
+                            <circle cx="14" cy="9" r="1" fill="#64748b" />
+                            <rect x="0" y="10" width="20" height="1" fill="white" opacity="0.6" rx="0.5" />
+                        </g>
+                    </svg>
+                    <!-- Brand Text -->
+                    <div style="display: inline-block;">
+                        <span style="font-size: 24px; font-weight: bold; color: white; letter-spacing: -0.5px;">Rail</span><span style="font-size: 24px; font-weight: bold; color: #34d399; letter-spacing: -0.5px;">Buddy</span>
+                    </div>
+                </div>
+                <p style="color: rgba(255, 255, 255, 0.8); margin: 0; font-size: 14px; font-weight: 400;">Your Railway Booking Companion</p>
             </div>
             
             <div style="background-color: #f8fafc; padding: 30px; border-radius: 8px; text-align: center;">
@@ -292,9 +320,37 @@ const sendPasswordResetWithResend = async (
 const generatePasswordResetEmailHTML = (resetLink: string): string => {
     return `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #2563eb; margin: 0;">RailBuddy</h1>
-                <p style="color: #6b7280; margin: 5px 0;">Your Railway Booking Companion</p>
+            <!-- Header with Logo -->
+            <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 30px 20px; text-align: center; border-radius: 12px; margin-bottom: 30px;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                    <!-- Logo SVG -->
+                    <svg width="36" height="36" viewBox="0 0 32 32" style="margin-right: 10px;">
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#ffffff" />
+                                <stop offset="100%" stop-color="#e0e7ff" />
+                            </linearGradient>
+                        </defs>
+                        <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#logoGradient)" />
+                        <g transform="translate(6, 10)">
+                            <rect x="2" y="4" width="16" height="4" fill="#2563eb" rx="2" />
+                            <circle cx="2" cy="6" r="2" fill="#2563eb" />
+                            <rect x="5" y="5" width="2" height="1" fill="white" rx="0.5" />
+                            <rect x="8" y="5" width="2" height="1" fill="white" rx="0.5" />
+                            <rect x="11" y="5" width="2" height="1" fill="white" rx="0.5" />
+                            <rect x="14" y="5" width="2" height="1" fill="white" rx="0.5" />
+                            <circle cx="6" cy="9" r="1" fill="#64748b" />
+                            <circle cx="10" cy="9" r="1" fill="#64748b" />
+                            <circle cx="14" cy="9" r="1" fill="#64748b" />
+                            <rect x="0" y="10" width="20" height="1" fill="white" opacity="0.6" rx="0.5" />
+                        </g>
+                    </svg>
+                    <!-- Brand Text -->
+                    <div style="display: inline-block;">
+                        <span style="font-size: 24px; font-weight: bold; color: white; letter-spacing: -0.5px;">Rail</span><span style="font-size: 24px; font-weight: bold; color: #34d399; letter-spacing: -0.5px;">Buddy</span>
+                    </div>
+                </div>
+                <p style="color: rgba(255, 255, 255, 0.8); margin: 0; font-size: 14px; font-weight: 400;">Your Railway Booking Companion</p>
             </div>
             
             <div style="background-color: #f8fafc; padding: 30px; border-radius: 8px;">
