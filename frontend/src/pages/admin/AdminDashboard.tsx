@@ -205,6 +205,15 @@ const AdminDashboard = () => {
                             </h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                                 <Link
+                                    to="/admin/trains/add"
+                                    className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    <PlusCircle className="h-8 w-8 text-primary mb-2" />
+                                    <span className="text-center">
+                                        Add New Train
+                                    </span>
+                                </Link>
+                                <Link
                                     to="/admin/trains"
                                     className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
@@ -241,16 +250,6 @@ const AdminDashboard = () => {
                                     <BarChart2 className="h-8 w-8 text-primary mb-2" />
                                     <span className="text-center">
                                         Generate Reports
-                                    </span>
-                                </Link>
-
-                                <Link
-                                    to="/admin/trains/add"
-                                    className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                                >
-                                    <PlusCircle className="h-8 w-8 text-primary mb-2" />
-                                    <span className="text-center">
-                                        Add New Train
                                     </span>
                                 </Link>
                             </div>

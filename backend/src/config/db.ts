@@ -55,8 +55,9 @@ export const initializeDatabase = async () => {
         train_id UUID REFERENCES trains(id) ON DELETE CASCADE,
         class_type VARCHAR(5) NOT NULL,
         total_seats INTEGER NOT NULL,
-        fare DECIMAL(10,2) NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        fare NUMERIC(10,2) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT 'CURRENT_TIMESTAMP',
+        available_seats INTEGER NOT NULL DEFAULT '0',
         UNIQUE(train_id, class_type)
       )
     `);
@@ -134,6 +135,17 @@ export const initializeDatabase = async () => {
         await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_support_messages_created_at 
       ON support_messages(created_at DESC)
+    `);
+
+        // create indexes for train_classes table
+        await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS train_classes_pkey 
+      ON train_classes USING BTREE (id)
+    `);
+
+        await pool.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS train_classes_train_id_class_type_key 
+      ON train_classes USING BTREE (train_id, class_type)
     `);
 
         console.log("Database schema initialized successfully");
