@@ -226,49 +226,6 @@ export const getTrainById = async (req: Request, res: Response) => {
     }
 };
 
-// export const searchTrains = async (req: Request, res: Response) => {
-//     try {
-//         const { source, destination, date } = req.query;
-
-//         if (!source || !destination || !date) {
-//             return res
-//                 .status(400)
-//                 .json({ message: "Missing required parameters" });
-//         }
-
-//         const result = await pool.query(
-//             `
-//             SELECT t.*,
-//                 json_agg(
-//                     json_build_object(
-//                         'type', tc.class_type,
-//                         'totalSeats', tc.total_seats,
-//                         'fare', tc.fare,
-//                         'availableSeats', tc.total_seats - COALESCE((
-//                             SELECT COUNT(*)
-//                             FROM bookings b
-//                             WHERE b.train_id = t.id
-//                             AND b.travel_date = $3
-//                             AND b.class_type = tc.class_type
-//                             AND b.status = 'Confirmed'
-//                         ), 0)
-//                     )
-//                 ) AS availability
-//             FROM trains t
-//             LEFT JOIN train_classes tc ON t.id = tc.train_id
-//             WHERE t.source_code = $1 AND t.destination_code = $2
-//             GROUP BY t.id
-//         `,
-//             [source, destination, date]
-//         );
-
-//         res.json(result.rows);
-//     } catch (error) {
-//         console.error("Search trains error:", error);
-//         res.status(500).json({ message: "Internal server error" });
-//     }
-// };
-
 export const searchTrains = async (req: Request, res: Response) => {
     try {
         const { source, destination, date } = req.query;
