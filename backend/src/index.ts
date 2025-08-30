@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import trainRoutes from "./routes/train.routes";
 import bookingRoutes from "./routes/booking.routes";
+import supportRoutes from "./routes/support.routes";
 import { authenticateToken } from "./middleware/auth";
 import { cleanupExpiredTokens } from "./utils/resetToken";
 
@@ -24,6 +25,7 @@ app.use(cookieParser());
 
 // Public routes
 app.use("/api/auth", authRoutes);
+app.use("/api/support", supportRoutes);
 
 // Protected routes
 app.use("/api/trains", trainRoutes);

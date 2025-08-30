@@ -16,11 +16,13 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminTrains from "./pages/admin/AdminTrains";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminReports from "./pages/admin/AdminReports";
+import AdminSupportMessages from "./pages/admin/AdminSupportMessages";
 import AddTrain from "./pages/admin/AddTrain";
 import EditTrain from "./pages/admin/EditTrain";
 import UserDashboard from "./pages/user/UserDashboard";
 import UserBookings from "./pages/user/UserBookings";
 import UserProfile from "./pages/user/UserProfile";
+import UserSupportMessages from "./pages/user/UserSupportMessages";
 import SupportPage from "./pages/SupportPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -63,6 +65,10 @@ function App() {
                             element={<UserBookings />}
                         />
                         <Route path="/user/profile" element={<UserProfile />} />
+                        <Route
+                            path="/user/support"
+                            element={<UserSupportMessages />}
+                        />
                     </Route>
 
                     {/* Admin Protected Routes */}
@@ -85,6 +91,10 @@ function App() {
                             element={<AdminBookings />}
                         />
                         <Route
+                            path="/admin/support"
+                            element={<AdminSupportMessages />}
+                        />
+                        <Route
                             path="/admin/reports"
                             element={<AdminReports />}
                         />
@@ -96,9 +106,8 @@ function App() {
             </main>
             <Footer />
             <Toaster
-                position="bottom-right"
                 toastOptions={{
-                    duration: 4000,
+                    duration: 3000,
                     style: {
                         background: "#333",
                         color: "#fff",

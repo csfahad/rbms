@@ -46,7 +46,7 @@ const Navbar = () => {
                             <>
                                 {isAdmin ? (
                                     <Link
-                                        to="/admin/dashboard\"
+                                        to="/admin/dashboard"
                                         className="px-3 py-2 text-primary hover:text-primary-light transition-colors"
                                     >
                                         Dashboard
@@ -68,29 +68,31 @@ const Navbar = () => {
                                     </button>
                                     <div className="absolute right-0 w-48 mt-2 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                                         {isAdmin ? (
-                                            <Link
-                                                to="/admin/dashboard\"
-                                                className="w-full text-left flex items-center px-4 py-2 text-sm text-primary-light hover:bg-gray-100"
+                                            <button
+                                                onClick={handleLogout}
+                                                className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                                             >
-                                                <LayoutDashboard className="h-4 w-4 mr-2" />
-                                                Dashboard
-                                            </Link>
+                                                <LogOut className="h-4 w-4 mr-2" />
+                                                Logout
+                                            </button>
                                         ) : (
-                                            <Link
-                                                to="/user/dashboard"
-                                                className="w-full text-left flex items-center px-4 py-2 text-sm text-primary-light hover:bg-gray-100"
-                                            >
-                                                <LayoutDashboard className="h-4 w-4 mr-2" />
-                                                Dashboard
-                                            </Link>
+                                            <>
+                                                <Link
+                                                    to="/user/dashboard"
+                                                    className="w-full text-left flex items-center px-4 py-2 text-sm text-primary-light hover:bg-gray-100"
+                                                >
+                                                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                                                    Dashboard
+                                                </Link>
+                                                <button
+                                                    onClick={handleLogout}
+                                                    className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                                >
+                                                    <LogOut className="h-4 w-4 mr-2" />
+                                                    Logout
+                                                </button>
+                                            </>
                                         )}
-                                        <button
-                                            onClick={handleLogout}
-                                            className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                                        >
-                                            <LogOut className="h-4 w-4 mr-2" />
-                                            Logout
-                                        </button>
                                     </div>
                                 </div>
                             </>
@@ -155,13 +157,22 @@ const Navbar = () => {
                                         Dashboard
                                     </Link>
                                 ) : (
-                                    <Link
-                                        to="/user/bookings"
-                                        className="px-3 py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-md"
-                                        onClick={() => setIsMenuOpen(false)}
-                                    >
-                                        My Bookings
-                                    </Link>
+                                    <>
+                                        <Link
+                                            to="/user/bookings"
+                                            className="px-3 py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-md"
+                                            onClick={() => setIsMenuOpen(false)}
+                                        >
+                                            My Bookings
+                                        </Link>
+                                        <Link
+                                            to="/user/dashboard"
+                                            className="px-3 py-2 text-gray-700 hover:text-primary hover:bg-gray-50 rounded-md"
+                                            onClick={() => setIsMenuOpen(false)}
+                                        >
+                                            Dashboard
+                                        </Link>
+                                    </>
                                 )}
                                 <hr className="my-2" />
                                 <div className="px-3 py-2 text-gray-700">

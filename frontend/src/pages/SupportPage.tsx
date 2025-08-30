@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { Phone, Mail, MapPin, Send } from "lucide-react";
+import { supportService } from "../services/supportService";
 
 const SupportPage = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -13,16 +14,28 @@ const SupportPage = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (
+            !formData.name.trim() ||
+            !formData.email.trim() ||
+            !formData.subject.trim() ||
+            !formData.message.trim()
+        ) {
+            toast.error("Please fill in all fields");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
-            // In a real app, this would send the support request to a backend
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            toast.success("Support request sent successfully");
+            await supportService.submitMessage(formData);
+            toast.success(
+                "Support message sent successfully! We'll get back to you soon."
+            );
             setFormData({ name: "", email: "", subject: "", message: "" });
-        } catch (error) {
-            console.error("Error sending support request:", error);
-            toast.error("Failed to send support request");
+        } catch (error: any) {
+            console.error("Error sending support message:", error);
+            toast.error(error.message || "Failed to send support message");
         } finally {
             setIsLoading(false);
         }

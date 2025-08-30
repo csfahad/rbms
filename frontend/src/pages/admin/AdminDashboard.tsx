@@ -9,6 +9,7 @@ import {
     PlusCircle,
     BarChart2,
     Train,
+    MessageSquare,
 } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -202,7 +203,7 @@ const AdminDashboard = () => {
                             <h2 className="text-xl font-semibold text-gray-900 mb-4">
                                 Quick Actions
                             </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                                 <Link
                                     to="/admin/trains"
                                     className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -220,6 +221,16 @@ const AdminDashboard = () => {
                                     <Ticket className="h-8 w-8 text-primary mb-2" />
                                     <span className="text-center">
                                         View Bookings
+                                    </span>
+                                </Link>
+
+                                <Link
+                                    to="/admin/support"
+                                    className="flex flex-col items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    <MessageSquare className="h-8 w-8 text-primary mb-2" />
+                                    <span className="text-center">
+                                        Support Messages
                                     </span>
                                 </Link>
 

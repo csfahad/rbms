@@ -109,6 +109,33 @@ export const initializeDatabase = async () => {
       ON used_reset_tokens(expires_at)
     `);
 
+        await pool.query(`
+      CREATE TABLE IF NOT EXISTS support_messages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        subject VARCHAR(200) NOT NULL,
+        message TEXT NOT NULL,
+        status VARCHAR(20) DEFAULT 'pending',
+        admin_response TEXT,
+        responded_by UUID REFERENCES users(id) ON DELETE SET NULL,
+        responded_at TIMESTAMP WITH TIME ZONE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+        // create index for performance on support message queries
+        await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_support_messages_status 
+      ON support_messages(status)
+    `);
+
+        await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_support_messages_created_at 
+      ON support_messages(created_at DESC)
+    `);
+
         console.log("Database schema initialized successfully");
     } catch (error) {
         console.error("Error initializing database schema:", error);

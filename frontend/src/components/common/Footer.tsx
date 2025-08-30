@@ -44,52 +44,52 @@ const Footer = () => {
                         <h3 className="text-xl font-bold mb-4">Quick Links</h3>
                         <ul className="space-y-2">
                             <li>
-                                <a
-                                    href="/"
+                                <Link
+                                    to="/"
                                     className="text-gray-300 hover:text-white transition-colors"
                                 >
                                     Home
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a
-                                    href="/search"
+                                <Link
+                                    to="/search"
                                     className="text-gray-300 hover:text-white transition-colors"
                                 >
                                     Search Trains
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a
-                                    href="/register"
+                                <Link
+                                    to="/register"
                                     className="text-gray-300 hover:text-white transition-colors"
                                 >
                                     Register
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a
-                                    href="/login"
+                                <Link
+                                    to="/support"
                                     className="text-gray-300 hover:text-white transition-colors"
                                 >
-                                    Login
-                                </a>
+                                    Support
+                                </Link>
                             </li>
                             <li>
-                                <a
-                                    href="#"
+                                <Link
+                                    to="#"
                                     className="text-gray-300 hover:text-white transition-colors"
                                 >
                                     Terms & Conditions
-                                </a>
+                                </Link>
                             </li>
                             <li>
-                                <a
-                                    href="#"
+                                <Link
+                                    to="#"
                                     className="text-gray-300 hover:text-white transition-colors"
                                 >
                                     Privacy Policy
-                                </a>
+                                </Link>
                             </li>
                         </ul>
                     </div>
