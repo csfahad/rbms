@@ -109,8 +109,13 @@ function App() {
                 toastOptions={{
                     duration: 3000,
                     style: {
-                        background: "#333",
-                        color: "#fff",
+                        border: "1px solid #1a237e",
+                        padding: "16px",
+                        color: "#1a237e",
+                    },
+                    iconTheme: {
+                        primary: "#1a237e",
+                        secondary: "#fff",
                     },
                 }}
             />
