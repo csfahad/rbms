@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { Mail, Lock, User, Phone, UserPlus } from "lucide-react";
 import { authService } from "../services/authService";
@@ -15,6 +15,7 @@ const RegisterPage = () => {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -77,6 +78,12 @@ const RegisterPage = () => {
         try {
             await authService.sendOtp(formData.email);
             toast.success("OTP sent to your email!");
+
+            // if user came from a redirect, save it to localStorage
+            const redirectPath = (location.state as any)?.from;
+            if (redirectPath) {
+                localStorage.setItem("redirectAfterLogin", redirectPath);
+            }
 
             navigate("/verify-otp", {
                 state: {
@@ -318,6 +325,7 @@ const RegisterPage = () => {
                     <div className="mt-6">
                         <Link
                             to="/login"
+                            state={{ from: (location.state as any)?.from }}
                             className="w-full flex justify-center py-2 px-4 border border-primary rounded-md shadow-sm text-sm font-medium text-primary bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                         >
                             Sign In

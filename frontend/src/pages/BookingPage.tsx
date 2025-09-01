@@ -261,10 +261,6 @@ const BookingPage = () => {
                 </div>
 
                 <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                        Book Your Train Tickets
-                    </h1>
-
                     <div className="mb-6">
                         <h2 className="text-xl font-semibold text-gray-900 mb-2">
                             {train.name}

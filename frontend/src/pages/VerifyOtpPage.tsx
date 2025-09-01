@@ -104,7 +104,19 @@ const VerifyOtpPage: React.FC = () => {
             );
             toast.success("Account created successfully!");
             loginWithData(response.user);
-            navigate("/user/dashboard");
+
+            // check if there's a saved redirect path
+            const redirectPath = localStorage.getItem("redirectAfterLogin");
+            console.log(
+                "VerifyOtpPage - redirectPath from localStorage:",
+                redirectPath
+            );
+            if (redirectPath) {
+                localStorage.removeItem("redirectAfterLogin");
+                navigate(redirectPath);
+            } else {
+                navigate("/user/dashboard");
+            }
         } catch (error: any) {
             toast.error(error.message || "Invalid OTP. Please try again.");
             // clear OTP on error

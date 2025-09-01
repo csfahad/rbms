@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "react-hot-toast";
 import { Mail, Lock, LogIn } from "lucide-react";
@@ -10,6 +10,7 @@ const LoginPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,7 +19,18 @@ const LoginPage = () => {
         try {
             await login(email, password);
             toast.success("Login successful!");
-            navigate("/");
+
+            // check if there's a saved redirect path or state from register
+            const savedRedirect = localStorage.getItem("redirectAfterLogin");
+            const stateRedirect = (location.state as any)?.from;
+            const redirectPath = savedRedirect || stateRedirect;
+
+            if (redirectPath) {
+                localStorage.removeItem("redirectAfterLogin");
+                navigate(redirectPath);
+            } else {
+                navigate("/");
+            }
         } catch (error: any) {
             toast.error(error.message || "Invalid email or password");
         } finally {
@@ -171,6 +183,12 @@ const LoginPage = () => {
                     <div className="mt-6">
                         <Link
                             to="/register"
+                            state={{
+                                from:
+                                    localStorage.getItem(
+                                        "redirectAfterLogin"
+                                    ) || (location.state as any)?.from,
+                            }}
                             className="w-full flex justify-center py-2 px-4 border border-primary rounded-md shadow-sm text-sm font-medium text-primary bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                         >
                             Register Now
