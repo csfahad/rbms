@@ -19,6 +19,13 @@ const classMappings: Record<string, string> = {
     "1A": "AC First Class (1A)",
 };
 
+interface TrainClass {
+    type: string;
+    totalSeats: number;
+    fare: number;
+    availableSeats?: number;
+}
+
 interface Train {
     id: number;
     number: string;
@@ -28,7 +35,7 @@ interface Train {
     departure_time: string;
     arrival_time: string;
     running_days: string[];
-    classes: string[];
+    classes: TrainClass[];
 }
 
 const AdminTrains = () => {
@@ -70,6 +77,10 @@ const AdminTrains = () => {
         const fetchTrains = async () => {
             try {
                 const data = await apiRequest("/trains");
+                console.log("Fetched trains data:", data);
+                if (data.length > 0) {
+                    console.log("Sample train classes:", data[0].classes);
+                }
                 setTrains(data);
             } catch (err: unknown) {
                 if (err instanceof Error) {
@@ -260,19 +271,29 @@ const AdminTrains = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex flex-wrap gap-1">
-                                                    {train?.classes?.map(
-                                                        (cls) => (
-                                                            <span
-                                                                key={cls}
-                                                                className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
-                                                            >
-                                                                {
-                                                                    classMappings[
-                                                                        cls
-                                                                    ]
-                                                                }
-                                                            </span>
+                                                    {train?.classes &&
+                                                    train.classes.length > 0 ? (
+                                                        train.classes.map(
+                                                            (classObj) => (
+                                                                <span
+                                                                    key={
+                                                                        classObj.type
+                                                                    }
+                                                                    className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800"
+                                                                >
+                                                                    {classMappings[
+                                                                        classObj
+                                                                            .type
+                                                                    ] ||
+                                                                        classObj.type}
+                                                                </span>
+                                                            )
                                                         )
+                                                    ) : (
+                                                        <span className="text-gray-500 text-sm">
+                                                            No classes
+                                                            configured
+                                                        </span>
                                                     )}
                                                 </div>
                                             </td>

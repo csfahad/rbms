@@ -76,7 +76,7 @@ export const getBookingById = async (id: string) => {
 
 export const getUserBookings = async (userId: string): Promise<Booking[]> => {
     const data = await apiRequest(`/bookings/user/${userId}`);
-    return data.all || []; // extract only the bookings array
+    return data.all || [];
 };
 
 export const getAllBookings = async () => {

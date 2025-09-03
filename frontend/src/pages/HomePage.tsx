@@ -7,6 +7,7 @@ import {
     CreditCard,
     ArrowRight,
     Repeat,
+    Info,
 } from "lucide-react";
 import StationAutocomplete from "../components/search/StationAutocomplete";
 import { Station } from "../services/trainService";
@@ -75,7 +76,26 @@ const HomePage = () => {
 
     return (
         <div className="min-h-screen">
-            {/* Hero Section with Train Search Form */}
+            {/* Beta Info Banner */}
+            <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
+                <div className="max-w-7xl mx-auto flex items-center justify-center gap-3">
+                    <Info className="h-4 w-4 text-primary flex-shrink-0" />
+                    <p className="text-sm text-primary-light text-center">
+                        <span className="font-semibold">Beta Version:</span>{" "}
+                        This website is currently in beta version. Only popular
+                        route trains are available for now. See{" "}
+                        <button
+                            onClick={() => navigate("/search")}
+                            className="text-primary hover:text-primary-light underline font-medium"
+                        >
+                            Search Page
+                        </button>{" "}
+                        for more information.
+                    </p>
+                </div>
+            </div>
+
+            {/* Hero Section */}
             <section className="relative min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                 <div className="absolute inset-0">
                     <img
@@ -84,12 +104,10 @@ const HomePage = () => {
                         className="w-full h-full object-cover"
                         style={{ objectPosition: "98% center" }}
                     />
-                    {/* Gradient overlay to ensure text readability */}
                     <div className="absolute inset-0 bg-gradient-to-r from-white/50 via-white/60 to-white/70"></div>
                 </div>
 
                 <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-                    {/* Main Heading - Centered at Top */}
                     <div className="text-center text-gray-900 mb-12 lg:mb-16">
                         <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 lg:mb-6 ">
                             Book Your Railway Journey With{" "}
@@ -102,7 +120,6 @@ const HomePage = () => {
                     </div>
 
                     <div className="flex justify-center">
-                        {/* Centered Search Form */}
                         <div className="w-full max-w-2xl">
                             {/* Search Form */}
                             <form
@@ -113,7 +130,6 @@ const HomePage = () => {
                                     Search Trains
                                 </h3>
                                 <div className="space-y-4 lg:space-y-6">
-                                    {/* Station Selection with Swap */}
                                     <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
                                         {/* From Station */}
                                         <div className="flex-1 w-full">
@@ -295,7 +311,7 @@ const HomePage = () => {
                             <div key={index} className="group">
                                 <div className="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 h-full">
                                     <div className="flex justify-center mb-6">
-                                        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-full group-hover:scale-110 transition-transform duration-300">
+                                        <div className="bg-gradient-to-br from-primary to-indigo-600 p-4 rounded-full group-hover:scale-110 transition-transform duration-300">
                                             <feature.icon className="h-8 w-8 text-white" />
                                         </div>
                                     </div>
@@ -326,9 +342,6 @@ const HomePage = () => {
                     </div>
 
                     <div className="relative">
-                        {/* Connector Line */}
-                        <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-blue-200 via-blue-400 to-blue-200 -translate-y-1/2 z-0"></div>
-
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative z-10">
                             {[
                                 {
@@ -360,7 +373,7 @@ const HomePage = () => {
                                     key={index}
                                     className="flex flex-col items-center group"
                                 >
-                                    <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <div className="bg-gradient-to-br from-primary to-indigo-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300">
                                         {item.step}
                                     </div>
                                     <h3 className="text-xl font-bold mb-4 text-gray-900">

@@ -25,6 +25,21 @@ const trainSchema = z.object({
             })
         )
         .min(1, "At least one class is required"),
+    stoppages: z
+        .array(
+            z.object({
+                stationName: z.string().min(1, "Station name is required"),
+                stationCode: z.string().min(1, "Station code is required"),
+                arrivalTime: z.string().optional(),
+                departureTime: z.string().optional(),
+                stopNumber: z.number().min(1),
+                platformNumber: z.string().optional(),
+                haltDuration: z.number().min(0).default(0),
+                distanceFromSource: z.number().min(0).default(0),
+            })
+        )
+        .optional()
+        .default([]),
 });
 
 export const getAllTrains = async (req: Request, res: Response) => {
@@ -39,12 +54,42 @@ export const getAllTrains = async (req: Request, res: Response) => {
         t.departure_time,
         t.arrival_time,
         t.running_days,
-        json_agg(tc.class_type ORDER BY tc.class_type) AS classes
+        COALESCE(
+            (SELECT json_agg(
+                json_build_object(
+                    'type', tc.class_type,
+                    'totalSeats', tc.total_seats,
+                    'fare', tc.fare
+                ) ORDER BY tc.class_type
+            )
+            FROM train_classes tc 
+            WHERE tc.train_id = t.id), '[]'::json
+        ) AS classes,
+        COALESCE(
+            (SELECT json_agg(
+                json_build_object(
+                    'id', ts.id,
+                    'stationName', ts.station_name,
+                    'stationCode', ts.station_code,
+                    'arrivalTime', ts.arrival_time,
+                    'departureTime', ts.departure_time,
+                    'stopNumber', ts.stop_number,
+                    'platformNumber', ts.platform_number,
+                    'haltDuration', ts.halt_duration_minutes,
+                    'distanceFromSource', ts.distance_from_source
+                ) ORDER BY ts.stop_number
+            )
+            FROM train_stoppages ts 
+            WHERE ts.train_id = t.id), '[]'::json
+        ) AS stoppages
       FROM trains t
-      LEFT JOIN train_classes tc ON t.id = tc.train_id
-      GROUP BY t.id
       ORDER BY t.id;
     `);
+
+        console.log(`Found ${result.rows.length} trains`);
+        if (result.rows.length > 0) {
+            console.log("First train classes:", result.rows[0].classes);
+        }
 
         res.status(200).json(result.rows);
     } catch (error) {
@@ -98,6 +143,32 @@ export const createTrain = async (req: Request, res: Response) => {
                 classData.totalSeats,
                 classData.fare,
             ]);
+        }
+
+        // insert train stoppages if provided
+        if (trainData.stoppages && trainData.stoppages.length > 0) {
+            const insertStoppageQuery = `
+                INSERT INTO train_stoppages (
+                    train_id, station_name, station_code, arrival_time,
+                    departure_time, stop_number, platform_number,
+                    halt_duration_minutes, distance_from_source
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `;
+
+            for (const stoppage of trainData.stoppages) {
+                await client.query(insertStoppageQuery, [
+                    train.id,
+                    stoppage.stationName,
+                    stoppage.stationCode,
+                    stoppage.arrivalTime || null,
+                    stoppage.departureTime || null,
+                    stoppage.stopNumber,
+                    stoppage.platformNumber || null,
+                    stoppage.haltDuration,
+                    stoppage.distanceFromSource,
+                ]);
+            }
         }
 
         await client.query("COMMIT");
@@ -167,6 +238,31 @@ export const updateTrain = async (req: Request, res: Response) => {
             ]);
         }
 
+        // handle stoppages update
+        await client.query(`DELETE FROM train_stoppages WHERE train_id = $1`, [
+            id,
+        ]);
+
+        const insertStoppageQuery = `
+            INSERT INTO train_stoppages (train_id, station_name, station_code, arrival_time,
+                departure_time, stop_number, platform_number, halt_duration_minutes, distance_from_source)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `;
+
+        for (const stoppageData of trainData.stoppages) {
+            await client.query(insertStoppageQuery, [
+                train.id,
+                stoppageData.stationName,
+                stoppageData.stationCode,
+                stoppageData.arrivalTime,
+                stoppageData.departureTime,
+                stoppageData.stopNumber,
+                stoppageData.platformNumber,
+                stoppageData.haltDuration,
+                stoppageData.distanceFromSource,
+            ]);
+        }
+
         await client.query("COMMIT");
         res.json(train);
     } catch (error) {
@@ -196,30 +292,46 @@ export const getTrainById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
-        const result = await pool.query(
-            `
-            SELECT t.*, 
-                json_agg(
-                    json_build_object(
-                        'type', tc.class_type,
-                        'totalSeats', tc.total_seats,
-                        'fare', tc.fare
-                    )
-                ) AS classes
-            FROM trains t
-            LEFT JOIN train_classes tc ON t.id = tc.train_id
-            WHERE t.id = $1
-            GROUP BY t.id
-        `,
+        // train basic information
+        const trainResult = await pool.query(
+            `SELECT * FROM trains WHERE id = $1`,
             [id]
         );
 
-        const train = result.rows[0];
+        const train = trainResult.rows[0];
         if (!train) {
             return res.status(404).json({ message: "Train not found" });
         }
 
-        res.json(train);
+        // train classes
+        const classesResult = await pool.query(
+            `SELECT class_type as type, total_seats as "totalSeats", fare 
+             FROM train_classes 
+             WHERE train_id = $1 
+             ORDER BY class_type`,
+            [id]
+        );
+
+        // train stoppages
+        const stoppagesResult = await pool.query(
+            `SELECT id, station_name as "stationName", station_code as "stationCode",
+                    arrival_time as "arrivalTime", departure_time as "departureTime",
+                    stop_number as "stopNumber", platform_number as "platformNumber",
+                    halt_duration_minutes as "haltDuration", distance_from_source as "distanceFromSource"
+             FROM train_stoppages 
+             WHERE train_id = $1 
+             ORDER BY stop_number`,
+            [id]
+        );
+
+        // combine the results
+        const response = {
+            ...train,
+            classes: classesResult.rows,
+            stoppages: stoppagesResult.rows,
+        };
+
+        res.json(response);
     } catch (error) {
         console.error("Get train error:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -236,12 +348,11 @@ export const searchTrains = async (req: Request, res: Response) => {
                 .json({ message: "Missing required parameters" });
         }
 
-        // Determine the day of the week from the date
         const dayOfWeek = new Date(date as string).toLocaleDateString("en-US", {
             weekday: "short", // returns 'Mon', 'Tue', etc.
         });
 
-        // Query trains that match source, destination, and run on the given day
+        // query trains that match source, destination, and run on the given day
         const result = await pool.query(
             `
             SELECT t.*,
@@ -294,6 +405,8 @@ export const getStations = async (req: Request, res: Response) => {
                 SELECT source_code AS code, source AS name FROM trains
                 UNION
                 SELECT destination_code AS code, destination AS name FROM trains
+                UNION
+                SELECT station_code AS code, station_name AS name FROM train_stoppages
             ) AS stations
             WHERE name ILIKE $1 OR code ILIKE $1
             ORDER BY name
@@ -305,6 +418,171 @@ export const getStations = async (req: Request, res: Response) => {
         res.json(result.rows);
     } catch (error) {
         console.error("Station suggestion error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// search trains by stoppage stations (segment-based search)
+export const searchTrainsByStoppage = async (req: Request, res: Response) => {
+    try {
+        const { source, destination, date } = req.query as {
+            source: string;
+            destination: string;
+            date: string;
+        };
+
+        if (!source || !destination || !date) {
+            return res.status(400).json({
+                message: "Source, destination, and date are required",
+            });
+        }
+
+        const dayOfWeek = new Date(date as string).toLocaleDateString("en-US", {
+            weekday: "short", // returns 'Mon', 'Tue', etc.
+        });
+
+        // find trains that have both source and destination in their stoppages/route
+        const result = await pool.query(
+            `
+            WITH train_routes AS (
+                -- Get all possible routes for each train including source, destination, and stoppages
+                SELECT 
+                    t.id,
+                    t.name,
+                    t.number,
+                    t.source,
+                    t.destination,
+                    t.source_code,
+                    t.destination_code,
+                    t.departure_time,
+                    t.arrival_time,
+                    t.duration,
+                    t.distance,
+                    t.running_days,
+                    -- Source station as stop 0
+                    0 as stop_number,
+                    t.source as station_name,
+                    t.source_code as station_code,
+                    NULL::time as arrival_time_stop,
+                    t.departure_time as departure_time_stop
+                FROM trains t
+                
+                UNION ALL
+                
+                -- All intermediate stoppages
+                SELECT 
+                    t.id,
+                    t.name,
+                    t.number,
+                    t.source,
+                    t.destination,
+                    t.source_code,
+                    t.destination_code,
+                    t.departure_time,
+                    t.arrival_time,
+                    t.duration,
+                    t.distance,
+                    t.running_days,
+                    ts.stop_number,
+                    ts.station_name,
+                    ts.station_code,
+                    ts.arrival_time as arrival_time_stop,
+                    ts.departure_time as departure_time_stop
+                FROM trains t
+                JOIN train_stoppages ts ON t.id = ts.train_id
+                
+                UNION ALL
+                
+                -- Destination station as last stop
+                SELECT 
+                    t.id,
+                    t.name,
+                    t.number,
+                    t.source,
+                    t.destination,
+                    t.source_code,
+                    t.destination_code,
+                    t.departure_time,
+                    t.arrival_time,
+                    t.duration,
+                    t.distance,
+                    t.running_days,
+                    999 as stop_number, -- Large number to ensure it's last
+                    t.destination as station_name,
+                    t.destination_code as station_code,
+                    t.arrival_time as arrival_time_stop,
+                    NULL::time as departure_time_stop
+                FROM trains t
+            ),
+            valid_trains AS (
+                SELECT DISTINCT tr1.id
+                FROM train_routes tr1
+                JOIN train_routes tr2 ON tr1.id = tr2.id
+                WHERE (tr1.station_name ILIKE $1 OR tr1.station_code ILIKE $1)
+                AND (tr2.station_name ILIKE $2 OR tr2.station_code ILIKE $2)
+                AND tr1.stop_number < tr2.stop_number
+                AND $4 = ANY(tr1.running_days)
+            )
+            SELECT 
+                t.id,
+                t.name,
+                t.number,
+                t.source,
+                t.destination,
+                t.source_code,
+                t.destination_code,
+                t.departure_time,
+                t.arrival_time,
+                t.duration,
+                t.distance,
+                t.running_days,
+                COALESCE(
+                    (SELECT json_agg(
+                        json_build_object(
+                            'type', tc.class_type,
+                            'totalSeats', tc.total_seats,
+                            'fare', tc.fare,
+                            'availableSeats', tc.total_seats - COALESCE(
+                                (SELECT COUNT(*)
+                                 FROM bookings b
+                                 LEFT JOIN passengers p ON p.booking_id = b.id
+                                 WHERE b.train_id = t.id
+                                   AND b.travel_date = $3
+                                   AND b.class_type = tc.class_type
+                                   AND b.status = 'Confirmed'), 0
+                            )
+                        ) ORDER BY tc.class_type
+                    )
+                    FROM train_classes tc 
+                    WHERE tc.train_id = t.id), '[]'::json
+                ) AS availability,
+                COALESCE(
+                    (SELECT json_agg(
+                        json_build_object(
+                            'id', ts.id,
+                            'stationName', ts.station_name,
+                            'stationCode', ts.station_code,
+                            'arrivalTime', ts.arrival_time,
+                            'departureTime', ts.departure_time,
+                            'stopNumber', ts.stop_number,
+                            'platformNumber', ts.platform_number,
+                            'haltDuration', ts.halt_duration_minutes,
+                            'distanceFromSource', ts.distance_from_source
+                        ) ORDER BY ts.stop_number
+                    )
+                    FROM train_stoppages ts 
+                    WHERE ts.train_id = t.id), '[]'::json
+                ) AS stoppages
+            FROM trains t
+            WHERE t.id IN (SELECT id FROM valid_trains)
+            ORDER BY t.departure_time;
+            `,
+            [source, destination, date, dayOfWeek]
+        );
+
+        res.json(result.rows);
+    } catch (error) {
+        console.error("Search trains by stoppage error:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };

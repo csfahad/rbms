@@ -5,6 +5,7 @@ import {
     deleteTrain,
     getTrainById,
     searchTrains,
+    searchTrainsByStoppage,
     getStations,
     getAllTrains,
 } from "../controllers/train.controller";
@@ -14,6 +15,7 @@ const router = Router();
 
 // Public routes
 router.get("/search", searchTrains);
+router.get("/search-by-stoppage", searchTrainsByStoppage);
 router.get("/stations", getStations);
 router.get("/:id", getTrainById);
 

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { Train } from "lucide-react";
-import { createTrain } from "../../services/trainService";
+import { Train, Plus, Trash2 } from "lucide-react";
+import { createTrain, TrainStoppage } from "../../services/trainService";
 
 const AddTrain = () => {
     const navigate = useNavigate();
@@ -25,6 +25,7 @@ const AddTrain = () => {
             { type: "2A", totalSeats: 40, fare: 0 },
             { type: "1A", totalSeats: 10, fare: 0 },
         ],
+        stoppages: [] as TrainStoppage[],
     });
 
     const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -42,6 +43,51 @@ const AddTrain = () => {
         const updatedClasses = [...formData.classes];
         updatedClasses[index] = { ...updatedClasses[index], [field]: value };
         setFormData((prev) => ({ ...prev, classes: updatedClasses }));
+    };
+
+    const addStoppage = () => {
+        const newStoppage: TrainStoppage = {
+            stationName: "",
+            stationCode: "",
+            arrivalTime: "",
+            departureTime: "",
+            stopNumber: formData.stoppages.length + 1,
+            platformNumber: "",
+            haltDuration: 5,
+            distanceFromSource: 0,
+        };
+        setFormData((prev) => ({
+            ...prev,
+            stoppages: [...prev.stoppages, newStoppage],
+        }));
+    };
+
+    const removeStoppage = (index: number) => {
+        const updatedStoppages = formData.stoppages.filter(
+            (_, i) => i !== index
+        );
+        // Renumber the remaining stoppages
+        const renumberedStoppages = updatedStoppages.map((stoppage, i) => ({
+            ...stoppage,
+            stopNumber: i + 1,
+        }));
+        setFormData((prev) => ({
+            ...prev,
+            stoppages: renumberedStoppages,
+        }));
+    };
+
+    const handleStoppageChange = (
+        index: number,
+        field: keyof TrainStoppage,
+        value: string | number
+    ) => {
+        const updatedStoppages = [...formData.stoppages];
+        updatedStoppages[index] = {
+            ...updatedStoppages[index],
+            [field]: value,
+        };
+        setFormData((prev) => ({ ...prev, stoppages: updatedStoppages }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -363,6 +409,207 @@ const AddTrain = () => {
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Train Stoppages Section */}
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <label className="form-label">
+                                Train Stoppages (Optional)
+                            </label>
+                            <button
+                                type="button"
+                                onClick={addStoppage}
+                                className="btn btn-primary btn-sm flex items-center gap-2"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Add Stoppage
+                            </button>
+                        </div>
+
+                        {formData.stoppages.length > 0 && (
+                            <div className="space-y-4">
+                                {formData.stoppages.map((stoppage, index) => (
+                                    <div
+                                        key={index}
+                                        className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h4 className="font-medium text-gray-700">
+                                                Stop #{stoppage.stopNumber}
+                                            </h4>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    removeStoppage(index)
+                                                }
+                                                className="text-red-600 hover:text-red-800 p-1"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </button>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="form-label">
+                                                    Station Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={stoppage.stationName}
+                                                    onChange={(e) =>
+                                                        handleStoppageChange(
+                                                            index,
+                                                            "stationName",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    placeholder="e.g., Mumbai Central"
+                                                    className="form-input"
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">
+                                                    Station Code
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={stoppage.stationCode}
+                                                    onChange={(e) =>
+                                                        handleStoppageChange(
+                                                            index,
+                                                            "stationCode",
+                                                            e.target.value.toUpperCase()
+                                                        )
+                                                    }
+                                                    placeholder="e.g., MMCT"
+                                                    className="form-input"
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-3 gap-4 mb-4">
+                                            <div>
+                                                <label className="form-label">
+                                                    Arrival Time
+                                                </label>
+                                                <input
+                                                    type="time"
+                                                    value={stoppage.arrivalTime}
+                                                    onChange={(e) =>
+                                                        handleStoppageChange(
+                                                            index,
+                                                            "arrivalTime",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">
+                                                    Departure Time
+                                                </label>
+                                                <input
+                                                    type="time"
+                                                    value={
+                                                        stoppage.departureTime
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleStoppageChange(
+                                                            index,
+                                                            "departureTime",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">
+                                                    Platform
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={
+                                                        stoppage.platformNumber
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleStoppageChange(
+                                                            index,
+                                                            "platformNumber",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    placeholder="e.g., 1"
+                                                    className="form-input"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="form-label">
+                                                    Halt Duration (minutes)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={
+                                                        stoppage.haltDuration
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleStoppageChange(
+                                                            index,
+                                                            "haltDuration",
+                                                            parseInt(
+                                                                e.target.value
+                                                            ) || 0
+                                                        )
+                                                    }
+                                                    className="form-input"
+                                                    min="0"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="form-label">
+                                                    Distance from Source (km)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={
+                                                        stoppage.distanceFromSource
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleStoppageChange(
+                                                            index,
+                                                            "distanceFromSource",
+                                                            parseFloat(
+                                                                e.target.value
+                                                            ) || 0
+                                                        )
+                                                    }
+                                                    className="form-input"
+                                                    min="0"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {formData.stoppages.length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                                <p>No stoppages added yet.</p>
+                                <p className="text-sm">
+                                    Stoppages help passengers book tickets for
+                                    intermediate stations.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end space-x-4">

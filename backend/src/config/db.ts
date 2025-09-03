@@ -63,12 +63,34 @@ export const initializeDatabase = async () => {
     `);
 
         await pool.query(`
+      CREATE TABLE IF NOT EXISTS train_stoppages (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        train_id UUID REFERENCES trains(id) ON DELETE CASCADE,
+        station_name VARCHAR(100) NOT NULL,
+        station_code VARCHAR(10) NOT NULL,
+        arrival_time TIME,
+        departure_time TIME,
+        stop_number INTEGER NOT NULL,
+        platform_number VARCHAR(10),
+        halt_duration_minutes INTEGER DEFAULT 0,
+        distance_from_source DECIMAL(8,2) DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(train_id, stop_number),
+        UNIQUE(train_id, station_code)
+      )
+    `);
+
+        await pool.query(`
       CREATE TABLE IF NOT EXISTS bookings (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
         train_id UUID REFERENCES trains(id) ON DELETE CASCADE,
         pnr VARCHAR(10) UNIQUE NOT NULL,
         class_type VARCHAR(5) NOT NULL,
+        source_station VARCHAR(100) NOT NULL,
+        source_station_code VARCHAR(10) NOT NULL,
+        destination_station VARCHAR(100) NOT NULL,
+        destination_station_code VARCHAR(10) NOT NULL,
         travel_date DATE NOT NULL,
         booking_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         status VARCHAR(20) DEFAULT 'Confirmed',
@@ -146,6 +168,22 @@ export const initializeDatabase = async () => {
         await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS train_classes_train_id_class_type_key 
       ON train_classes USING BTREE (train_id, class_type)
+    `);
+
+        // create indexes for train_stoppages table
+        await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_train_stoppages_train_id 
+      ON train_stoppages(train_id)
+    `);
+
+        await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_train_stoppages_station_code 
+      ON train_stoppages(station_code)
+    `);
+
+        await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_train_stoppages_stop_number 
+      ON train_stoppages(train_id, stop_number)
     `);
 
         console.log("Database schema initialized successfully");

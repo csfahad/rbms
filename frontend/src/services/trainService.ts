@@ -8,6 +8,18 @@ export interface Station {
     state?: string;
 }
 
+export interface TrainStoppage {
+    id?: string;
+    stationName: string;
+    stationCode: string;
+    arrivalTime?: string;
+    departureTime?: string;
+    stopNumber: number;
+    platformNumber?: string;
+    haltDuration?: number;
+    distanceFromSource?: number;
+}
+
 export interface ClassAvailability {
     type: TrainClass;
     totalSeats: number;
@@ -29,6 +41,7 @@ export interface Train {
     distance: string;
     running_days: string[];
     availability: ClassAvailability[];
+    stoppages?: TrainStoppage[];
 }
 
 export const createTrain = async (trainData: any) => {
@@ -59,8 +72,35 @@ export const searchTrains = async (
     );
 };
 
+export const searchTrainsByStoppage = async (
+    source: string,
+    destination: string,
+    date: string
+) => {
+    return await apiRequest(
+        `/trains/search-by-stoppage?source=${source}&destination=${destination}&date=${date}`
+    );
+};
+
 export const getStationSuggestions = async (
     query: string
 ): Promise<Station[]> => {
     return await apiRequest(`/trains/stations?query=${query}`);
+};
+
+export const getStationByCode = async (
+    code: string
+): Promise<Station | null> => {
+    try {
+        const stations = await apiRequest(`/trains/stations?query=${code}`);
+        return (
+            stations.find(
+                (station: Station) =>
+                    station.code.toLowerCase() === code.toLowerCase()
+            ) || null
+        );
+    } catch (error) {
+        console.error("Error fetching station by code:", error);
+        return null;
+    }
 };
