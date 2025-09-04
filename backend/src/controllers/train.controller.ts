@@ -86,11 +86,6 @@ export const getAllTrains = async (req: Request, res: Response) => {
       ORDER BY t.id;
     `);
 
-        console.log(`Found ${result.rows.length} trains`);
-        if (result.rows.length > 0) {
-            console.log("First train classes:", result.rows[0].classes);
-        }
-
         res.status(200).json(result.rows);
     } catch (error) {
         console.error("Error fetching trains:", error);
