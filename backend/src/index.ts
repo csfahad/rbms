@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes";
 import trainRoutes from "./routes/train.routes";
 import bookingRoutes from "./routes/booking.routes";
 import supportRoutes from "./routes/support.routes";
+import userRoutes from "./routes/user.routes";
 import { authenticateToken } from "./middleware/auth";
 import { cleanupExpiredTokens } from "./utils/resetToken";
 
@@ -30,6 +31,7 @@ app.use("/api/support", supportRoutes);
 // Protected routes
 app.use("/api/trains", trainRoutes);
 app.use("/api/bookings", authenticateToken, bookingRoutes);
+app.use("/api/users", authenticateToken, userRoutes);
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);

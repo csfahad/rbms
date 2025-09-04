@@ -142,22 +142,19 @@ const VerifyOtpPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="text-center">
-                    <h2 className="mt-6 text-3xl font-bold text-gray-900">
-                        Verify Your Email
-                    </h2>
-                    <p className="mt-2 text-sm text-gray-600">
-                        We've sent a 6-digit code to
-                    </p>
-                    <p className="font-medium text-[#1A237E]">{email}</p>
-                </div>
-            </div>
-
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
                 <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+                    <div className="text-center">
+                        <h2 className="mt-6 text-3xl font-bold text-gray-900">
+                            Verify Your Email
+                        </h2>
+                        <p className="mt-2 text-sm text-gray-600">
+                            We've sent a 6-digit code to
+                        </p>
+                        <p className="font-medium text-[#1A237E]">{email}</p>
+                    </div>
                     <form onSubmit={handleVerifyOtp} className="space-y-6">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
+                            <label className="block text-sm font-medium text-gray-700 m-5 text-center">
                                 Enter verification code
                             </label>
                             <div className="flex justify-center space-x-2">
