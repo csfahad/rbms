@@ -15,6 +15,15 @@ const bookingSchema = z.object({
             gender: z.string(),
         })
     ),
+    // segment-based booking fields
+    sourceStation: z.string().optional(),
+    sourceCode: z.string().optional(),
+    destinationStation: z.string().optional(),
+    destinationCode: z.string().optional(),
+    departureTime: z.string().optional(),
+    arrivalTime: z.string().optional(),
+    duration: z.string().optional(),
+    distance: z.string().optional(),
 });
 
 export const createBooking = async (req: Request, res: Response) => {
@@ -69,8 +78,10 @@ export const createBooking = async (req: Request, res: Response) => {
         const { rows: bookingRows } = await client.query(
             `INSERT INTO bookings (
                 user_id, train_id, pnr, class_type, travel_date,
-                total_fare, status
-             ) VALUES ($1, $2, $3, $4, $5, $6, 'Confirmed')
+                total_fare, status, source_station, source_code,
+                destination_station, destination_code, departure_time,
+                arrival_time, duration, distance
+             ) VALUES ($1, $2, $3, $4, $5, $6, 'Confirmed', $7, $8, $9, $10, $11, $12, $13, $14)
              RETURNING *`,
             [
                 bookingData.userId,
@@ -79,6 +90,14 @@ export const createBooking = async (req: Request, res: Response) => {
                 bookingData.classType,
                 bookingData.travelDate,
                 totalFare,
+                bookingData.sourceStation || trainClass.source,
+                bookingData.sourceCode || null,
+                bookingData.destinationStation || trainClass.destination,
+                bookingData.destinationCode || null,
+                bookingData.departureTime || null,
+                bookingData.arrivalTime || null,
+                bookingData.duration || null,
+                bookingData.distance || null,
             ]
         );
 
@@ -123,7 +142,10 @@ export const getBookingById = async (req: Request, res: Response) => {
 
         const { rows } = await pool.query(
             `SELECT b.*, t.name as train_name, t.number as train_number,
-                    t.source, t.destination,
+                    COALESCE(b.source_station, t.source) as source,
+                    COALESCE(b.destination_station, t.destination) as destination,
+                    b.source_code, b.destination_code, b.departure_time, b.arrival_time,
+                    b.duration, b.distance,
                     json_agg(
                         json_build_object(
                             'id', p.id,
@@ -159,7 +181,10 @@ export const getUserBookings = async (req: Request, res: Response) => {
 
         const { rows } = await pool.query(
             `SELECT b.*, t.name as train_name, t.number as train_number,
-                    t.source, t.destination,
+                    COALESCE(b.source_station, t.source) as source,
+                    COALESCE(b.destination_station, t.destination) as destination,
+                    b.source_code, b.destination_code, b.departure_time, b.arrival_time,
+                    b.duration, b.distance,
                     json_agg(
                         json_build_object(
                             'id', p.id,

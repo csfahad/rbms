@@ -7,15 +7,7 @@ import {
     Booking,
 } from "../../services/bookingService";
 import { toast } from "react-hot-toast";
-import {
-    Calendar,
-    Clock,
-    Users,
-    CreditCard,
-    AlertTriangle,
-    Download,
-    X,
-} from "lucide-react";
+import { Calendar, Users, X, Download, AlertTriangle } from "lucide-react";
 import { generateTicket } from "../../utils/ticketGenerator";
 
 const UserBookings = () => {
@@ -279,7 +271,8 @@ const UserBookings = () => {
                                         <div className="flex items-center">
                                             <div className="text-right mr-3">
                                                 <p className="font-medium">
-                                                    {booking.source}
+                                                    {booking.source} (
+                                                    {booking.source_code})
                                                 </p>
                                             </div>
                                             <div className="flex items-center mx-2">
@@ -289,7 +282,8 @@ const UserBookings = () => {
                                             </div>
                                             <div className="ml-3">
                                                 <p className="font-medium">
-                                                    {booking.destination}
+                                                    {booking.destination} (
+                                                    {booking.destination_code})
                                                 </p>
                                             </div>
                                         </div>
@@ -384,98 +378,181 @@ const UserBookings = () => {
                                 </div>
 
                                 {/* Journey Details */}
-                                <div className="border-l border-r border-gray-200 p-4">
-                                    <div className="flex flex-col md:flex-row justify-between mb-4">
-                                        <div className="flex items-start mb-4 md:mb-0">
-                                            <div className="text-right mr-3">
-                                                <p className="text-lg font-bold">
-                                                    {selectedBooking.source}
-                                                </p>
+                                <div className="border-l border-r border-gray-200 px-8 py-3">
+                                    <div className="flex items-center justify-between">
+                                        {/* Source Station */}
+                                        <div className="text-center flex-shrink-0">
+                                            <div className="text-xl font-bold text-gray-900">
+                                                {selectedBooking.source_station ||
+                                                    selectedBooking.source}
                                             </div>
-                                            <div className="flex flex-col items-center mx-2">
-                                                <div className="w-3 h-3 rounded-full bg-primary"></div>
-                                                <div className="w-0.5 h-16 bg-gray-300"></div>
-                                                <div className="w-3 h-3 rounded-full bg-primary"></div>
-                                            </div>
-                                            <div className="ml-3">
-                                                <p className="text-lg font-bold">
+                                            {selectedBooking.source_code && (
+                                                <div className="text-sm text-gray-600 mt-1">
                                                     {
-                                                        selectedBooking.destination
+                                                        selectedBooking.source_code
                                                     }
-                                                </p>
+                                                </div>
+                                            )}
+                                            {selectedBooking.departure_time && (
+                                                <div className="text-lg font-semibold text-primary mt-2">
+                                                    {
+                                                        selectedBooking.departure_time
+                                                    }
+                                                </div>
+                                            )}
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                Departure
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <div className="flex items-center mb-2">
-                                                <Calendar className="h-4 w-4 text-gray-500 mr-2" />
-                                                <span className="text-gray-700">
-                                                    {new Date(
-                                                        selectedBooking.travel_date
-                                                    ).toLocaleDateString(
-                                                        "en-US",
+                                        {/* Journey Connector */}
+                                        <div className="flex items-center mx-8 flex-shrink-0">
+                                            <div className="w-3 h-3 rounded-full bg-primary"></div>
+                                            <div className="flex-1 h-0.5 bg-gray-300 mx-2 min-w-[80px]"></div>
+                                            {selectedBooking.duration && (
+                                                <div className="text-center mx-4">
+                                                    <div className="text-xs text-gray-500">
+                                                        Duration
+                                                    </div>
+                                                    <div className="text-sm font-medium">
                                                         {
-                                                            weekday: "long",
-                                                            day: "numeric",
-                                                            month: "long",
-                                                            year: "numeric",
+                                                            selectedBooking.duration
                                                         }
-                                                    )}
-                                                </span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="flex-1 h-0.5 bg-gray-300 mx-2 min-w-[80px]"></div>
+                                            <div className="w-3 h-3 rounded-full bg-primary"></div>
+                                        </div>
+
+                                        {/* Destination Station */}
+                                        <div className="text-center flex-shrink-0">
+                                            <div className="text-xl font-bold text-gray-900">
+                                                {selectedBooking.destination_station ||
+                                                    selectedBooking.destination}
                                             </div>
-                                            <div className="flex items-center mb-2">
-                                                <Clock className="h-4 w-4 text-gray-500 mr-2" />
-                                                <span className="text-gray-700">
-                                                    Booked on:{" "}
-                                                    {new Date(
-                                                        selectedBooking.booking_date
-                                                    ).toLocaleDateString()}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center">
-                                                <CreditCard className="h-4 w-4 text-gray-500 mr-2" />
-                                                <span className="text-gray-700">
-                                                    Total Fare: ₹
-                                                    {selectedBooking.total_fare}
-                                                </span>
+                                            {selectedBooking.destination_code && (
+                                                <div className="text-sm text-gray-600 mt-1">
+                                                    {
+                                                        selectedBooking.destination_code
+                                                    }
+                                                </div>
+                                            )}
+                                            {selectedBooking.arrival_time && (
+                                                <div className="text-lg font-semibold text-primary mt-2">
+                                                    {
+                                                        selectedBooking.arrival_time
+                                                    }
+                                                </div>
+                                            )}
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                Arrival
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="mt-4">
-                                        <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-                                            <Users className="h-5 w-5 mr-2" />
+                                    {/* Travel Date */}
+                                    <div className="text-center mt-6 pt-4 border-t border-gray-200">
+                                        <div className="flex items-center justify-center text-gray-600">
+                                            Travel Date:{" "}
+                                            <Calendar className="h-4 w-4 text-gray-500 mr-2 ml-2" />
+                                            <span className="text-gray-700 font-medium">
+                                                {new Date(
+                                                    selectedBooking.travel_date
+                                                ).toLocaleDateString("en-US", {
+                                                    weekday: "long",
+                                                    day: "numeric",
+                                                    month: "long",
+                                                    year: "numeric",
+                                                })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Booking Information */}
+                                <div className="border-l border-r border-b border-gray-200 px-4 py-3">
+                                    <div className="flex items-center justify-between text-md">
+                                        <div className="flex items-center">
+                                            <span className="text-gray-600 mr-1">
+                                                Passengers:
+                                            </span>
+                                            <span className="font-semibold">
+                                                {selectedBooking.passengers
+                                                    ?.length || 1}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="text-gray-600 mr-1">
+                                                Total Fare:
+                                            </span>
+                                            <span className="font-semibold text-green-600">
+                                                ₹{selectedBooking.total_fare}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="text-gray-600 mr-1">
+                                                Booked on:
+                                            </span>
+                                            <span className="font-semibold">
+                                                {new Date(
+                                                    selectedBooking.booking_date
+                                                ).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center">
+                                            <span className="text-gray-600 mr-1">
+                                                Status:
+                                            </span>
+                                            <span
+                                                className={`font-semibold ${
+                                                    selectedBooking.status ===
+                                                    "Confirmed"
+                                                        ? "text-green-600"
+                                                        : "text-red-600"
+                                                }`}
+                                            >
+                                                {selectedBooking.status}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Passenger Details */}
+                                    <div className="mt-3">
+                                        <h4 className="font-medium text-gray-900 mb-2 flex items-center text-sm">
+                                            <Users className="h-4 w-4 mr-2" />
                                             Passenger Details
                                         </h4>
-                                        <div className="bg-gray-50 p-3 rounded-md">
+                                        <div className="bg-gray-50 p-2 rounded-md">
                                             {selectedBooking.passengers.map(
                                                 (passenger, index) => (
                                                     <div
                                                         key={passenger.id}
-                                                        className={`${
+                                                        className={`flex justify-between items-center text-sm p-2 ${
                                                             index > 0
-                                                                ? "border-t border-gray-200 pt-2 mt-2"
+                                                                ? "border-t border-gray-200 p-2 mt-1"
                                                                 : ""
                                                         }`}
                                                     >
-                                                        <p className="font-medium">
-                                                            {passenger.name}
-                                                        </p>
-                                                        <div className="flex justify-between text-sm text-gray-600">
-                                                            <span>
-                                                                {passenger.age}{" "}
+                                                        <div>
+                                                            <span className="font-medium">
+                                                                {passenger.name}
+                                                            </span>
+                                                            <span className="text-gray-600 ml-2">
+                                                                ({passenger.age}{" "}
                                                                 years,{" "}
                                                                 {
                                                                     passenger.gender
                                                                 }
-                                                            </span>
-                                                            <span>
-                                                                Seat:{" "}
-                                                                {
-                                                                    passenger.seatNumber
-                                                                }
+                                                                )
                                                             </span>
                                                         </div>
+                                                        <span className="text-gray-600">
+                                                            Seat:{" "}
+                                                            {
+                                                                passenger.seatNumber
+                                                            }
+                                                        </span>
                                                     </div>
                                                 )
                                             )}
@@ -483,14 +560,14 @@ const UserBookings = () => {
                                     </div>
 
                                     {selectedBooking.status === "Cancelled" && (
-                                        <div className="mt-4 bg-red-50 p-3 rounded-md flex items-start">
-                                            <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+                                        <div className="mt-2 bg-red-50 p-2 rounded-md flex items-start">
+                                            <AlertTriangle className="h-4 w-4 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
                                             <div>
-                                                <p className="text-red-800 font-medium">
+                                                <p className="text-red-800 font-medium text-sm">
                                                     This booking has been
                                                     cancelled
                                                 </p>
-                                                <p className="text-red-600 text-sm">
+                                                <p className="text-red-600 text-xs">
                                                     Cancellation cannot be
                                                     reverted. Please create a
                                                     new booking if you wish to
@@ -502,66 +579,70 @@ const UserBookings = () => {
                                 </div>
 
                                 {/* Actions */}
-                                <div className="border border-gray-200 rounded-b-lg p-4 bg-gray-50">
-                                    <div className="flex flex-col sm:flex-row gap-3 justify-end">
-                                        {selectedBooking.status ===
-                                            "Confirmed" && (
-                                            <>
-                                                {new Date(
-                                                    selectedBooking.travel_date
-                                                ) > new Date() && (
+                                {selectedBooking.status === "Confirmed" && (
+                                    <div className="border border-gray-200 rounded-b-lg p-3 bg-gray-50">
+                                        <div className="flex flex-row gap-2 justify-end">
+                                            {selectedBooking.status ===
+                                                "Confirmed" && (
+                                                <>
+                                                    {new Date(
+                                                        selectedBooking.travel_date
+                                                    ) > new Date() && (
+                                                        <button
+                                                            onClick={() =>
+                                                                setShowCancelConfirmModal(
+                                                                    true
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                isCancelling
+                                                            }
+                                                            className="btn btn-accent flex items-center justify-center text-sm px-3 py-2"
+                                                        >
+                                                            {isCancelling ? (
+                                                                <svg
+                                                                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    fill="none"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <circle
+                                                                        className="opacity-25"
+                                                                        cx="12"
+                                                                        cy="12"
+                                                                        r="10"
+                                                                        stroke="currentColor"
+                                                                        strokeWidth="4"
+                                                                    ></circle>
+                                                                    <path
+                                                                        className="opacity-75"
+                                                                        fill="currentColor"
+                                                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                                    ></path>
+                                                                </svg>
+                                                            ) : (
+                                                                <X className="h-4 w-4 mr-2" />
+                                                            )}
+                                                            Cancel Booking
+                                                        </button>
+                                                    )}
+
                                                     <button
                                                         onClick={() =>
-                                                            setShowCancelConfirmModal(
-                                                                true
+                                                            downloadTicket(
+                                                                selectedBooking
                                                             )
                                                         }
-                                                        disabled={isCancelling}
-                                                        className="btn btn-accent flex items-center justify-center"
+                                                        className="btn btn-primary flex items-center justify-center text-sm px-3 py-2"
                                                     >
-                                                        {isCancelling ? (
-                                                            <svg
-                                                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white\"
-                                                                xmlns="http://www.w3.org/2000/svg\"
-                                                                fill="none\"
-                                                                viewBox="0 0 24 24"
-                                                            >
-                                                                <circle
-                                                                    className="opacity-25\"
-                                                                    cx="12\"
-                                                                    cy="12\"
-                                                                    r="10\"
-                                                                    stroke="currentColor\"
-                                                                    strokeWidth="4"
-                                                                ></circle>
-                                                                <path
-                                                                    className="opacity-75"
-                                                                    fill="currentColor"
-                                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                                ></path>
-                                                            </svg>
-                                                        ) : (
-                                                            <X className="h-5 w-5 mr-2" />
-                                                        )}
-                                                        Cancel Booking
+                                                        <Download className="h-4 w-4 mr-2" />
+                                                        Download Ticket
                                                     </button>
-                                                )}
-
-                                                <button
-                                                    onClick={() =>
-                                                        downloadTicket(
-                                                            selectedBooking
-                                                        )
-                                                    }
-                                                    className="btn btn-primary flex items-center justify-center"
-                                                >
-                                                    <Download className="h-5 w-5 mr-2" />
-                                                    Download Ticket
-                                                </button>
-                                            </>
-                                        )}
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>

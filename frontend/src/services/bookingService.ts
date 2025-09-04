@@ -23,6 +23,15 @@ export interface Booking {
     source: string;
     destination: string;
     passengers: Passenger[];
+    // segment booking fields
+    source_station?: string;
+    source_code?: string;
+    destination_station?: string;
+    destination_code?: string;
+    departure_time?: string;
+    arrival_time?: string;
+    duration?: string;
+    distance?: string;
 }
 
 export interface TrainResult {
@@ -54,7 +63,17 @@ export const createBooking = async (
     train: any,
     classType: string,
     passengers: Omit<Passenger, "id" | "seatNumber">[],
-    travelDate: string
+    travelDate: string,
+    segmentInfo?: {
+        fromStation?: string;
+        fromCode?: string;
+        toStation?: string;
+        toCode?: string;
+        departureTime?: string;
+        arrivalTime?: string;
+        duration?: string;
+        distance?: string;
+    }
 ) => {
     const data = await apiRequest("/bookings", {
         method: "POST",
@@ -64,6 +83,15 @@ export const createBooking = async (
             classType,
             travelDate,
             passengers,
+            // include segment information for segment-based booking
+            sourceStation: segmentInfo?.fromStation || train.source,
+            sourceCode: segmentInfo?.fromCode || train.source_code,
+            destinationStation: segmentInfo?.toStation || train.destination,
+            destinationCode: segmentInfo?.toCode || train.destination_code,
+            departureTime: segmentInfo?.departureTime || train.departure_time,
+            arrivalTime: segmentInfo?.arrivalTime || train.arrival_time,
+            duration: segmentInfo?.duration || train.duration,
+            distance: segmentInfo?.distance || train.distance,
         }),
     });
 

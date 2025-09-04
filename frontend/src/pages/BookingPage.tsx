@@ -32,6 +32,18 @@ const BookingPage = () => {
     const [isBookingLoading, setIsBookingLoading] = useState(false);
     const [step, setStep] = useState(1);
 
+    // segment information for booking
+    const [segmentInfo, setSegmentInfo] = useState<{
+        fromStation?: string;
+        fromCode?: string;
+        toStation?: string;
+        toCode?: string;
+        departureTime?: string;
+        arrivalTime?: string;
+        duration?: string;
+        distance?: string;
+    }>({});
+
     const classMappings: Record<TrainClass, string> = {
         SL: "Sleeper (SL)",
         "3A": "AC 3 Tier (3A)",
@@ -39,10 +51,118 @@ const BookingPage = () => {
         "1A": "AC First Class (1A)",
     };
 
+    // function to get segment details from train data
+    const getSegmentDetails = (
+        train: any,
+        fromStationName: string,
+        toStationName: string
+    ) => {
+        // find departure time from source or stoppages
+        let departureTime = train.departure_time;
+        let departureCode = train.source_code;
+        let departureStation =
+            train.source?.split(" - ")[0] || train.source_code;
+        let departureDistance = 0;
+
+        // check if departure is from a stoppage
+        const departureStoppage = train.stoppages?.find(
+            (stop: any) =>
+                stop.stationName
+                    .toLowerCase()
+                    .includes(fromStationName.toLowerCase()) ||
+                fromStationName
+                    .toLowerCase()
+                    .includes(stop.stationName.toLowerCase())
+        );
+
+        if (departureStoppage) {
+            departureTime =
+                departureStoppage.departureTime ||
+                departureStoppage.arrivalTime;
+            departureCode = departureStoppage.stationCode;
+            departureStation = departureStoppage.stationName.split(" - ")[0];
+            departureDistance = departureStoppage.distanceFromSource || 0;
+        }
+
+        // find arrival time at destination or stoppages
+        let arrivalTime = train.arrival_time;
+        let arrivalCode = train.destination_code;
+        let arrivalStation =
+            train.destination?.split(" - ")[0] || train.destination_code;
+        let arrivalDistance = parseInt(
+            train.distance?.replace(/[^\d]/g, "") || "0"
+        );
+
+        // check if arrival is at a stoppage
+        const arrivalStoppage = train.stoppages?.find(
+            (stop: any) =>
+                stop.stationName
+                    .toLowerCase()
+                    .includes(toStationName.toLowerCase()) ||
+                toStationName
+                    .toLowerCase()
+                    .includes(stop.stationName.toLowerCase())
+        );
+
+        if (arrivalStoppage) {
+            arrivalTime =
+                arrivalStoppage.arrivalTime || arrivalStoppage.departureTime;
+            arrivalCode = arrivalStoppage.stationCode;
+            arrivalStation = arrivalStoppage.stationName.split(" - ")[0];
+            arrivalDistance = arrivalStoppage.distanceFromSource || 0;
+        }
+
+        // calculate duration
+        const calculateDuration = (
+            startTime: string,
+            endTime: string
+        ): string => {
+            const [startHour, startMin] = startTime.split(":").map(Number);
+            const [endHour, endMin] = endTime.split(":").map(Number);
+
+            let totalMinutes =
+                endHour * 60 + endMin - (startHour * 60 + startMin);
+
+            // handle next day arrival
+            if (totalMinutes < 0) {
+                totalMinutes += 24 * 60;
+            }
+
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
+            return `${hours.toString().padStart(2, "0")}h ${minutes
+                .toString()
+                .padStart(2, "0")}m`;
+        };
+
+        const duration = calculateDuration(departureTime, arrivalTime);
+
+        // calculate segment distance
+        const segmentDistance = Math.abs(arrivalDistance - departureDistance);
+        const distance =
+            segmentDistance > 0
+                ? `${segmentDistance} km`
+                : train.distance || "N/A";
+
+        return {
+            fromStation: departureStation,
+            fromCode: departureCode,
+            toStation: arrivalStation,
+            toCode: arrivalCode,
+            departureTime,
+            arrivalTime,
+            duration,
+            distance,
+        };
+    };
+
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const classParam = params.get("class") as TrainClass;
         const dateParam = params.get("date");
+        const fromStation = params.get("fromStation");
+        const toStation = params.get("toStation");
 
         if (classParam && Object.keys(classMappings).includes(classParam)) {
             setSelectedClass(classParam);
@@ -51,7 +171,7 @@ const BookingPage = () => {
         if (dateParam) {
             setTravelDate(dateParam);
         } else {
-            // Set default date to tomorrow
+            // set default date to tomorrow
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             setTravelDate(tomorrow.toISOString().split("T")[0]);
@@ -67,6 +187,32 @@ const BookingPage = () => {
                     return;
                 }
                 setTrain(trainData);
+
+                // calculate segment details if segment information is provided
+                if (fromStation && toStation) {
+                    const segmentDetails = getSegmentDetails(
+                        trainData,
+                        fromStation,
+                        toStation
+                    );
+                    setSegmentInfo(segmentDetails);
+                } else {
+                    // use main route if no segment info
+                    setSegmentInfo({
+                        fromStation:
+                            trainData.source?.split(" - ")[0] ||
+                            trainData.source_code,
+                        fromCode: trainData.source_code,
+                        toStation:
+                            trainData.destination?.split(" - ")[0] ||
+                            trainData.destination_code,
+                        toCode: trainData.destination_code,
+                        departureTime: trainData.departure_time,
+                        arrivalTime: trainData.arrival_time,
+                        duration: trainData.duration,
+                        distance: trainData.distance,
+                    });
+                }
             } catch (error) {
                 console.error("Error fetching train:", error);
                 toast.error("Failed to load train details");
@@ -142,7 +288,8 @@ const BookingPage = () => {
                 train,
                 selectedClass,
                 passengers,
-                travelDate
+                travelDate,
+                segmentInfo
             );
 
             toast.success("Booking successful!");
@@ -260,58 +407,111 @@ const BookingPage = () => {
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-                    <div className="mb-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                            {train.name}
-                        </h2>
-                        <p className="text-gray-600">
-                            Train Number: {train.number}
-                        </p>
+                <div className="bg-white rounded-xl shadow-md border border-gray-100 mb-8 overflow-hidden">
+                    {/* Train Header */}
+                    <div className="bg-gradient-to-r from-primary-light to-primary px-6 py-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white mb-1">
+                                    {train.name} ({train.number})
+                                </h2>
+                            </div>
+                            <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2">
+                                <p className="text-green-300 text-sm font-medium">
+                                    AVAILABLE -{" "}
+                                    {selectedClassInfo?.totalSeats || 0} Seats
+                                </p>
+                            </div>
+                        </div>
+                    </div>
 
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mt-4">
-                            <div className="flex items-start mb-4 md:mb-0">
-                                <div className="text-right mr-3">
-                                    <p className="text-xl font-bold">
-                                        {train.departure_time}
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                        {train.source_code}
-                                    </p>
+                    {/* Route Information */}
+                    <div className="p-6">
+                        <div className="flex flex-col lg:flex-row justify-between items-start gap-6">
+                            {/* Journey Route */}
+                            <div className="flex items-center justify-center w-full lg:w-auto">
+                                {/* Departure */}
+                                <div className="text-center flex-shrink-0">
+                                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                                        {segmentInfo.departureTime ||
+                                            train.departure_time}
+                                    </div>
+                                    <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
+                                        {segmentInfo.fromCode ||
+                                            train.source_code}
+                                    </div>
+                                    <div className="text-md font-semibold text-gray-600 max-w-[120px] leading-tight min-h-[2.5rem] flex items-center justify-center">
+                                        {segmentInfo.fromStation ||
+                                            train.source?.split(" - ")[0] ||
+                                            train.source_code}
+                                    </div>
                                 </div>
-                                <div className="flex flex-col items-center mx-2">
-                                    <div className="w-3 h-3 rounded-full bg-primary"></div>
-                                    <div className="w-0.5 h-16 bg-gray-300"></div>
-                                    <div className="w-3 h-3 rounded-full bg-primary"></div>
+
+                                {/* Journey Connector */}
+                                <div className="flex flex-col items-center mx-8 flex-shrink-0">
+                                    <div className="flex items-center">
+                                        <div className="w-3 h-3 rounded-full bg-primary"></div>
+                                        <div className="w-24 h-0.5 bg-gray-300 mx-2"></div>
+                                        <div className="w-3 h-3 rounded-full bg-primary"></div>
+                                    </div>
+                                    <div className="mt-3 px-4 py-2 bg-gray-50 rounded-full">
+                                        <div className="flex items-center text-sm text-gray-600">
+                                            <Clock className="h-4 w-4 mr-1" />
+                                            <span className="font-semibold">
+                                                {segmentInfo.duration ||
+                                                    train.duration}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="ml-3">
-                                    <p className="text-xl font-bold">
-                                        {train.arrival_time}
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                        {train.destination_code}
-                                    </p>
+
+                                {/* Arrival */}
+                                <div className="text-center flex-shrink-0">
+                                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                                        {segmentInfo.arrivalTime ||
+                                            train.arrival_time}
+                                    </div>
+                                    <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold mb-2">
+                                        {segmentInfo.toCode ||
+                                            train.destination_code}
+                                    </div>
+                                    <div className="text-md text-gray-600 font-semibold max-w-[120px] leading-tight min-h-[2.5rem] flex items-center justify-center">
+                                        {segmentInfo.toStation ||
+                                            train.destination?.split(
+                                                " - "
+                                            )[0] ||
+                                            train.destination_code}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col items-center mx-4">
-                                <div className="flex items-center mb-1">
-                                    <Clock className="h-4 w-4 text-gray-500 mr-1" />
-                                    <span className="text-gray-700">
-                                        {train.duration}
-                                    </span>
+                            {/* Journey Stats */}
+                            <div className="flex gap-4 flex-shrink-0">
+                                <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl text-center border border-orange-200">
+                                    <MapPin className="h-6 w-6 text-orange-600 mx-auto mb-2" />
+                                    <div className="text-xl font-bold text-orange-800">
+                                        {segmentInfo.distance || train.distance}
+                                    </div>
+                                    <div className="text-xs text-orange-600 font-medium">
+                                        Distance
+                                    </div>
                                 </div>
-                                <div className="flex items-center">
-                                    <MapPin className="h-4 w-4 text-gray-500 mr-1" />
-                                    <span className="text-gray-700">
-                                        {train.distance}
-                                    </span>
+
+                                <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-xl text-center border border-purple-200">
+                                    <Clock className="h-6 w-6 text-purple-600 mx-auto mb-2" />
+                                    <div className="text-xl font-bold text-purple-800">
+                                        {segmentInfo.duration || train.duration}
+                                    </div>
+                                    <div className="text-xs text-purple-600 font-medium">
+                                        Journey Time
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="border-t border-gray-200 pt-6">
+                    {/* Date and Class Selection */}
+                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
                         <div className="flex flex-col md:flex-row gap-6 mb-6">
                             <div className="w-full md:w-1/2">
                                 <label
@@ -572,7 +772,22 @@ const BookingPage = () => {
                                             From - To
                                         </p>
                                         <p className="font-medium">
-                                            {train.source} - {train.destination}
+                                            {segmentInfo.fromStation ||
+                                                train.source?.split(
+                                                    " - "
+                                                )[0]}{" "}
+                                            -{" "}
+                                            {segmentInfo.toStation ||
+                                                train.destination?.split(
+                                                    " - "
+                                                )[0]}
+                                        </p>
+                                        <p className="text-xs text-gray-400">
+                                            {segmentInfo.fromCode ||
+                                                train.source_code}{" "}
+                                            -{" "}
+                                            {segmentInfo.toCode ||
+                                                train.destination_code}
                                         </p>
                                     </div>
                                     <div>
@@ -588,8 +803,11 @@ const BookingPage = () => {
                                             Departure - Arrival
                                         </p>
                                         <p className="font-medium">
-                                            {train.departure_time} -{" "}
-                                            {train.arrival_time}
+                                            {segmentInfo.departureTime ||
+                                                train.departure_time}{" "}
+                                            -{" "}
+                                            {segmentInfo.arrivalTime ||
+                                                train.arrival_time}
                                         </p>
                                     </div>
                                     <div>
@@ -772,17 +990,17 @@ const BookingPage = () => {
                                 >
                                     {isBookingLoading ? (
                                         <svg
-                                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white\"
-                                            xmlns="http://www.w3.org/2000/svg\"
-                                            fill="none\"
+                                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
                                             viewBox="0 0 24 24"
                                         >
                                             <circle
-                                                className="opacity-25\"
-                                                cx="12\"
-                                                cy="12\"
-                                                r="10\"
-                                                stroke="currentColor\"
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
                                                 strokeWidth="4"
                                             ></circle>
                                             <path

@@ -359,7 +359,20 @@ const SearchTrainsPage = () => {
     };
 
     const handleBooking = (trainId: string, classType: TrainClass) => {
-        navigate(`/booking/${trainId}?class=${classType}&date=${date}`);
+        const params = new URLSearchParams({
+            class: classType,
+            date: date,
+        });
+
+        // add segment information if available
+        if (sourceStation && destinationStation) {
+            params.append("fromStation", sourceStation.name);
+            params.append("fromCode", sourceStation.code);
+            params.append("toStation", destinationStation.name);
+            params.append("toCode", destinationStation.code);
+        }
+
+        navigate(`/booking/${trainId}?${params.toString()}`);
     };
 
     const getClassAvailabilityColor = (availability: number, total: number) => {
@@ -946,13 +959,10 @@ const SearchTrainsPage = () => {
                                     {selectedTrain.name}
                                 </div>
                                 <div className="col-span-2 text-center font-medium">
-                                    {selectedTrain.source?.split(" - ")[0] ||
-                                        "NEW DELHI"}
+                                    {selectedTrain.source?.split(" - ")[0]}
                                 </div>
                                 <div className="col-span-2 text-center font-medium">
-                                    {selectedTrain.destination?.split(
-                                        " - "
-                                    )[0] || "PRAYAGRAJ JN."}
+                                    {selectedTrain.destination?.split(" - ")[0]}
                                 </div>
                                 <div className="col-span-3 flex justify-center items-center gap-1 flex-wrap">
                                     {[

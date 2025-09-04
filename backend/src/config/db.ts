@@ -87,14 +87,19 @@ export const initializeDatabase = async () => {
         train_id UUID REFERENCES trains(id) ON DELETE CASCADE,
         pnr VARCHAR(10) UNIQUE NOT NULL,
         class_type VARCHAR(5) NOT NULL,
-        source_station VARCHAR(100) NOT NULL,
-        source_station_code VARCHAR(10) NOT NULL,
-        destination_station VARCHAR(100) NOT NULL,
-        destination_station_code VARCHAR(10) NOT NULL,
         travel_date DATE NOT NULL,
         booking_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         status VARCHAR(20) DEFAULT 'Confirmed',
-        total_fare DECIMAL(10,2) NOT NULL
+        total_fare DECIMAL(10,2) NOT NULL,
+        -- Segment booking fields
+        source_station VARCHAR(255),
+        source_code VARCHAR(10),
+        destination_station VARCHAR(255),
+        destination_code VARCHAR(10),
+        departure_time VARCHAR(10),
+        arrival_time VARCHAR(10),
+        duration VARCHAR(20),
+        distance VARCHAR(20)
       )
     `);
 
