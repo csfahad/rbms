@@ -1,9 +1,19 @@
 import { Mail, Phone, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
+import toast from "react-hot-toast";
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
+
+    const handleNewsletterSubscribe = (
+        e: React.MouseEvent<HTMLButtonElement>
+    ) => {
+        e.preventDefault();
+        toast.success(
+            "Newsletter subscribed, you will receive upcoming updates!"
+        );
+    };
 
     return (
         <footer className="bg-gray-900 text-white pt-10 pb-6">
@@ -28,7 +38,7 @@ const Footer = () => {
                         <div className="flex items-center mb-2">
                             <Mail className="h-5 w-5 mr-2 text-gray-400" />
                             <span className="text-gray-300">
-                                contact@railbooking.com
+                                csfahad.dev@gmail.com
                             </span>
                         </div>
                         <div className="flex items-start mb-2">
@@ -107,7 +117,7 @@ const Footer = () => {
                                 className="px-4 py-2 w-full rounded-l-md focus:outline-none text-gray-900"
                             />
                             <button
-                                type="submit"
+                                onClick={handleNewsletterSubscribe}
                                 className="bg-primary px-4 py-2 rounded-r-md hover:bg-primary-light transition-colors"
                             >
                                 Subscribe

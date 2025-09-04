@@ -4,10 +4,14 @@ import {
     Calendar,
     Search,
     UserCircle,
-    Download,
     Filter,
     ChevronDown,
+    FileSpreadsheet,
+    FileDown,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const AdminBookings = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -33,32 +37,118 @@ const AdminBookings = () => {
         loadBookings();
     }, []);
 
-    // Filter and sort bookings
+    // filter and sort bookings
     const filteredBookings = bookings
         .filter((booking) => {
             let matchesSearch = true;
             let matchesStatus = true;
             let matchesDate = true;
 
-            // Search filter
             if (searchQuery) {
                 const searchLower = searchQuery.toLowerCase();
-                matchesSearch =
-                    booking.pnr.toLowerCase().includes(searchLower) ||
-                    booking.userId.toLowerCase().includes(searchLower) ||
-                    booking.train_name.toLowerCase().includes(searchLower) ||
-                    booking.source.toLowerCase().includes(searchLower) ||
-                    booking.destination.toLowerCase().includes(searchLower);
+                const searchableFields = [
+                    booking.pnr,
+                    booking.userId,
+                    booking.train_name,
+                    booking.source,
+                    booking.destination,
+                    booking.source_station,
+                    booking.destination_station,
+                    booking.train_number,
+                    booking.status,
+                ];
+
+                matchesSearch = searchableFields.some(
+                    (field) =>
+                        field &&
+                        field.toString().toLowerCase().includes(searchLower)
+                );
             }
 
-            // Status filter
             if (statusFilter !== "all") {
                 matchesStatus = booking.status === statusFilter;
             }
 
-            // Date filter
             if (dateFilter) {
-                matchesDate = booking.travel_date === dateFilter;
+                try {
+                    const filterDate = dateFilter;
+
+                    // function to normalize date to YYYY-MM-DD format
+                    const normalizeDate = (dateStr: string): string => {
+                        if (!dateStr) return "";
+
+                        // if already in YYYY-MM-DD format
+                        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                            return dateStr;
+                        }
+
+                        // if in DD/MM/YYYY format
+                        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+                            const [day, month, year] = dateStr.split("/");
+                            return `${year}-${month.padStart(
+                                2,
+                                "0"
+                            )}-${day.padStart(2, "0")}`;
+                        }
+
+                        // if in ISO format like 2025-09-05T18:30:00.000Z
+                        if (dateStr.includes("T") && dateStr.includes("Z")) {
+                            // parse as UTC date and convert to local date
+                            const utcDate = new Date(dateStr);
+                            // get the local date
+                            const localYear = utcDate.getFullYear();
+                            const localMonth = String(
+                                utcDate.getMonth() + 1
+                            ).padStart(2, "0");
+                            const localDay = String(utcDate.getDate()).padStart(
+                                2,
+                                "0"
+                            );
+
+                            return `${localYear}-${localMonth}-${localDay}`;
+                        }
+
+                        // if in ISO format like 2025-09-13T00:00:00.000Z, but we want to extract just the date part
+                        if (dateStr.includes("T")) {
+                            return dateStr.split("T")[0];
+                        }
+
+                        // if date looks like YYYY-MM-DD but with extra characters
+                        const dateMatch = dateStr.match(
+                            /(\d{4})-(\d{2})-(\d{2})/
+                        );
+                        if (dateMatch) {
+                            return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+                        }
+
+                        // fallback
+                        try {
+                            const parsedDate = new Date(dateStr);
+                            const year = parsedDate.getFullYear();
+                            const month = String(
+                                parsedDate.getMonth() + 1
+                            ).padStart(2, "0");
+                            const day = String(parsedDate.getDate()).padStart(
+                                2,
+                                "0"
+                            );
+                            return `${year}-${month}-${day}`;
+                        } catch (e) {
+                            console.error("Failed to parse date:", dateStr, e);
+                            return "";
+                        }
+                    };
+
+                    const bookingDate = normalizeDate(booking.travel_date);
+                    matchesDate = bookingDate === filterDate;
+                } catch (error) {
+                    console.error(
+                        "Date filter error:",
+                        error,
+                        booking.travel_date
+                    );
+                    matchesDate = false;
+                }
             }
 
             return matchesSearch && matchesStatus && matchesDate;
@@ -82,10 +172,95 @@ const AdminBookings = () => {
         });
 
     const exportToCsv = () => {
-        // In a real app, this would generate and download a CSV report
-        alert(
-            "This would download a CSV report of bookings in a production application."
-        );
+        // create CSV data from filtered bookings
+        const csvData = filteredBookings.map((booking) => ({
+            PNR: booking.pnr,
+            "Train Name": booking.train_name,
+            "Train Number": booking.train_number,
+            "Passenger Count": booking.passengers.length,
+            Source: booking.source || booking.source_station || "N/A",
+            Destination:
+                booking.destination || booking.destination_station || "N/A",
+            "Travel Date": new Date(booking.travel_date).toLocaleDateString(),
+            "Booking Date": new Date(booking.booking_date).toLocaleDateString(),
+            Class: booking.class_type,
+            "Total Fare": `₹${booking.total_fare}`,
+            Status: booking.status,
+        }));
+
+        // create worksheet
+        const ws = XLSX.utils.json_to_sheet(csvData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Bookings");
+
+        // download file
+        const timestamp = new Date().toISOString().split("T")[0];
+        XLSX.writeFile(wb, `bookings_${timestamp}.xlsx`);
+    };
+
+    const exportToPdf = () => {
+        const doc = new jsPDF();
+
+        // add title
+        doc.setFontSize(18);
+        doc.text("Admin Bookings Report", 20, 20);
+
+        // add generation date
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
+        doc.text(`Total Bookings: ${filteredBookings.length}`, 20, 45);
+
+        // prepare table data
+        const tableData = filteredBookings.map((booking) => [
+            booking.pnr,
+            booking.train_name || "N/A",
+            booking.train_number || "N/A",
+            booking.passengers.length.toString(),
+            booking.source || booking.source_station || "N/A",
+            booking.destination || booking.destination_station || "N/A",
+            new Date(booking.travel_date).toLocaleDateString(),
+            booking.class_type,
+            `₹${booking.total_fare}`,
+            booking.status,
+        ]);
+
+        // add table
+        autoTable(doc, {
+            head: [
+                [
+                    "PNR",
+                    "Train Name",
+                    "Train No.",
+                    "Passengers",
+                    "Source",
+                    "Destination",
+                    "Travel Date",
+                    "Class",
+                    "Fare",
+                    "Status",
+                ],
+            ],
+            body: tableData,
+            startY: 55,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [41, 128, 185] },
+            columnStyles: {
+                0: { cellWidth: 20 }, // PNR
+                1: { cellWidth: 25 }, // Train Name
+                2: { cellWidth: 18 }, // Train No
+                3: { cellWidth: 15 }, // Passengers
+                4: { cellWidth: 20 }, // Source
+                5: { cellWidth: 20 }, // Destination
+                6: { cellWidth: 20 }, // Travel Date
+                7: { cellWidth: 12 }, // Class
+                8: { cellWidth: 15 }, // Fare
+                9: { cellWidth: 15 }, // Status
+            },
+        });
+
+        // download PDF
+        const timestamp = new Date().toISOString().split("T")[0];
+        doc.save(`bookings_${timestamp}.pdf`);
     };
 
     const classMappings: Record<string, string> = {
@@ -107,13 +282,22 @@ const AdminBookings = () => {
                             View and manage customer bookings
                         </p>
                     </div>
-                    <button
-                        onClick={exportToCsv}
-                        className="btn btn-secondary flex items-center"
-                    >
-                        <Download className="h-5 w-5 mr-2" />
-                        Export to CSV
-                    </button>
+                    <div className="flex space-x-3">
+                        <button
+                            onClick={exportToCsv}
+                            className="btn btn-secondary flex items-center"
+                            title="Export to Excel"
+                        >
+                            <FileSpreadsheet className="h-5 w-5" />
+                        </button>
+                        <button
+                            onClick={exportToPdf}
+                            className="btn btn-secondary flex items-center"
+                            title="Export to PDF"
+                        >
+                            <FileDown className="h-5 w-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Search and Filter Bar */}
@@ -189,7 +373,6 @@ const AdminBookings = () => {
                                     <option value="all">All Statuses</option>
                                     <option value="Confirmed">Confirmed</option>
                                     <option value="Cancelled">Cancelled</option>
-                                    <option value="Waiting">Waiting</option>
                                 </select>
                             </div>
 
@@ -260,38 +443,38 @@ const AdminBookings = () => {
                                         <thead className="bg-gray-50">
                                             <tr>
                                                 <th
-                                                    scope="col\"
-                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                    scope="col"
+                                                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                                 >
                                                     Booking Info
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                                 >
                                                     Train Details
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                                 >
                                                     Journey
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                                 >
                                                     Passengers & Class
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                                 >
                                                     Amount
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                                 >
                                                     Status
                                                 </th>
@@ -303,7 +486,7 @@ const AdminBookings = () => {
                                                     key={booking.id}
                                                     className="hover:bg-gray-50"
                                                 >
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">
                                                             PNR: {booking.pnr}
                                                         </div>
@@ -314,7 +497,7 @@ const AdminBookings = () => {
                                                             ).toLocaleDateString()}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">
                                                             {booking.train_name}
                                                         </div>
@@ -324,7 +507,7 @@ const AdminBookings = () => {
                                                             }
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="flex items-center">
                                                             <Calendar className="h-4 w-4 text-gray-400 mr-1" />
                                                             <div className="text-sm text-gray-900">
@@ -340,7 +523,7 @@ const AdminBookings = () => {
                                                             }
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="flex items-center">
                                                             <UserCircle className="h-4 w-4 text-gray-400 mr-1" />
                                                             <div className="text-sm text-gray-900">
@@ -362,21 +545,18 @@ const AdminBookings = () => {
                                                             }
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">
                                                             ₹
                                                             {booking.total_fare}
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-4 py-4 whitespace-nowrap">
                                                         <span
                                                             className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                                                 booking.status ===
                                                                 "Confirmed"
                                                                     ? "bg-green-100 text-green-800"
-                                                                    : booking.status ===
-                                                                      "Waiting"
-                                                                    ? "bg-yellow-100 text-yellow-800"
                                                                     : "bg-red-100 text-red-800"
                                                             }`}
                                                         >
