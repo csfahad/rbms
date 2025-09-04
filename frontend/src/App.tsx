@@ -108,14 +108,34 @@ function App() {
             <Toaster
                 toastOptions={{
                     duration: 3000,
+
+                    // Default styles (for generic toast())
                     style: {
                         border: "1px solid #1a237e",
-                        padding: "16px",
                         color: "#1a237e",
                     },
-                    iconTheme: {
-                        primary: "#1a237e",
-                        secondary: "#fff",
+
+                    // SUCCESS TOAST STYLING
+                    success: {
+                        style: {
+                            border: "1px solid green",
+                            color: "green",
+                        },
+                        iconTheme: {
+                            primary: "green",
+                            secondary: "#fff",
+                        },
+                    },
+                    // ERROR TOAST STYLING
+                    error: {
+                        style: {
+                            border: "1px solid red",
+                            color: "red",
+                        },
+                        iconTheme: {
+                            primary: "red",
+                            secondary: "#fff",
+                        },
                     },
                 }}
             />
