@@ -11,6 +11,32 @@ import {
     Train,
     MessageSquare,
 } from "lucide-react";
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement,
+} from "chart.js";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
+
+// register Chart.js components
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+    ArcElement
+);
 
 const AdminDashboard = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -22,6 +48,190 @@ const AdminDashboard = () => {
         totalRevenue: 0,
         totalPassengers: 0,
     });
+    const [chartData, setChartData] = useState<{
+        bookingTrends: any;
+        revenueDistribution: any;
+        popularRoutes: any;
+    }>({
+        bookingTrends: null,
+        revenueDistribution: null,
+        popularRoutes: null,
+    });
+
+    const getMainStationName = (fullStationName: string) => {
+        if (!fullStationName) return "";
+
+        const parts = fullStationName.split(/\s*[-–—]\s*/);
+        let mainName = parts[0].trim();
+
+        // remove common suffixes like JN, JCT, etc.
+        mainName = mainName.replace(/\s+(JN|JCT|JUNCTION|JUNC)$/i, "");
+
+        // limit length to prevent overflow (max 12 characters)
+        if (mainName.length > 12) {
+            mainName = mainName.substring(0, 12) + "...";
+        }
+
+        return mainName;
+    };
+
+    const processBookingTrends = (bookings: Booking[]) => {
+        const last7Days = [];
+        const today = new Date();
+
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            last7Days.push(date.toISOString().split("T")[0]);
+        }
+
+        const bookingCounts = last7Days.map((date) => {
+            return bookings.filter(
+                (booking) => booking.booking_date.split("T")[0] === date
+            ).length;
+        });
+
+        return {
+            labels: last7Days.map((date) => {
+                const d = new Date(date);
+                return d.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                });
+            }),
+            datasets: [
+                {
+                    label: "Bookings",
+                    data: bookingCounts,
+                    borderColor: "rgb(59, 130, 246)",
+                    backgroundColor: "rgba(59, 130, 246, 0.1)",
+                    tension: 0.4,
+                    fill: true,
+                },
+            ],
+        };
+    };
+
+    const processRevenueDistribution = (bookings: Booking[]) => {
+        const confirmedBookings = bookings.filter(
+            (b) => b.status === "Confirmed"
+        );
+
+        if (confirmedBookings.length === 0) {
+            return {
+                labels: ["No Data"],
+                datasets: [
+                    {
+                        data: [1],
+                        backgroundColor: ["rgba(156, 163, 175, 0.8)"],
+                        borderWidth: 2,
+                        borderColor: "#fff",
+                    },
+                ],
+            };
+        }
+
+        const revenueByClass = confirmedBookings.reduce((acc: any, booking) => {
+            const classType = booking.class_type || "General";
+            acc[classType] =
+                (acc[classType] || 0) + Number(booking.total_fare || 0);
+            return acc;
+        }, {});
+
+        const labels = Object.keys(revenueByClass);
+        const data = Object.values(revenueByClass);
+        const backgroundColors = [
+            "rgba(59, 130, 246, 0.8)",
+            "rgba(16, 185, 129, 0.8)",
+            "rgba(245, 158, 11, 0.8)",
+            "rgba(239, 68, 68, 0.8)",
+            "rgba(139, 92, 246, 0.8)",
+        ];
+
+        return {
+            labels,
+            datasets: [
+                {
+                    data,
+                    backgroundColor: backgroundColors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: "#fff",
+                },
+            ],
+        };
+    };
+
+    const processPopularRoutes = (bookings: Booking[]) => {
+        const confirmedBookings = bookings.filter(
+            (b) => b.status === "Confirmed"
+        );
+
+        if (confirmedBookings.length === 0) {
+            return {
+                labels: ["No Data"],
+                datasets: [
+                    {
+                        label: "Bookings",
+                        data: [0],
+                        backgroundColor: ["rgba(156, 163, 175, 0.8)"],
+                        borderWidth: 1,
+                    },
+                ],
+                fullRouteNames: ["No Data"],
+            };
+        }
+
+        const routeData = confirmedBookings.reduce((acc: any, booking) => {
+            const sourceMain = getMainStationName(booking.source);
+            const destinationMain = getMainStationName(booking.destination);
+
+            const sourceCode = booking.source_code || booking.source;
+            const destinationCode =
+                booking.destination_code || booking.destination;
+
+            const fullRoute = `${sourceMain} → ${destinationMain}`;
+            const codeRoute = `${sourceCode} → ${destinationCode}`;
+
+            if (!acc[fullRoute]) {
+                acc[fullRoute] = {
+                    count: 0,
+                    codeRoute: codeRoute,
+                };
+            }
+            acc[fullRoute].count += 1;
+            return acc;
+        }, {});
+
+        // get top routes (up to 5)
+        const sortedRoutes = Object.entries(routeData)
+            .sort(([, a], [, b]) => (b as any).count - (a as any).count)
+            .slice(0, 5);
+
+        const labels = sortedRoutes.map(([, data]) => (data as any).codeRoute);
+        const data = sortedRoutes.map(
+            ([, routeData]) => (routeData as any).count
+        );
+        const fullRouteNames = sortedRoutes.map(([fullRoute]) => fullRoute);
+
+        return {
+            labels,
+            datasets: [
+                {
+                    label: "Bookings",
+                    data,
+                    backgroundColor: [
+                        "rgba(59, 130, 246, 0.8)",
+                        "rgba(16, 185, 129, 0.8)",
+                        "rgba(245, 158, 11, 0.8)",
+                        "rgba(239, 68, 68, 0.8)",
+                        "rgba(139, 92, 246, 0.8)",
+                    ],
+                    borderWidth: 1,
+                },
+            ],
+            fullRouteNames,
+        };
+    };
 
     useEffect(() => {
         const loadData = async () => {
@@ -29,7 +239,7 @@ const AdminDashboard = () => {
                 const allBookings = await getAllBookings();
                 setBookings(allBookings);
 
-                // Calculate stats
+                // calculate stats
                 const active = allBookings.filter(
                     (b: Booking) => b.status === "Confirmed"
                 ).length;
@@ -59,6 +269,14 @@ const AdminDashboard = () => {
                     totalRevenue: revenue,
                     totalPassengers: passengers,
                 });
+
+                // process chart data
+                setChartData({
+                    bookingTrends: processBookingTrends(allBookings),
+                    revenueDistribution:
+                        processRevenueDistribution(allBookings),
+                    popularRoutes: processPopularRoutes(allBookings),
+                });
             } catch (error) {
                 console.error("Error loading data:", error);
             } finally {
@@ -69,7 +287,7 @@ const AdminDashboard = () => {
         loadData();
     }, []);
 
-    // Recent bookings for dashboard display
+    // recent bookings for dashboard display
     const recentBookings = [...bookings]
         .sort(
             (a, b) =>
@@ -341,40 +559,227 @@ const AdminDashboard = () => {
                                     </h2>
 
                                     <div className="space-y-6">
-                                        {/* Sample chart/graph placeholders */}
+                                        {/* Booking Trends Chart */}
                                         <div>
                                             <h3 className="text-sm font-medium text-gray-500 mb-2">
-                                                Booking Trends
+                                                Booking Trends (Last 7 Days)
                                             </h3>
-                                            <div className="bg-gray-100 h-40 rounded-lg flex items-center justify-center">
-                                                <p className="text-gray-500 text-sm">
-                                                    Booking trend chart would
-                                                    appear here
-                                                </p>
+                                            <div className="bg-white h-40 rounded-lg p-4">
+                                                {chartData.bookingTrends ? (
+                                                    <Line
+                                                        data={
+                                                            chartData.bookingTrends
+                                                        }
+                                                        options={{
+                                                            responsive: true,
+                                                            maintainAspectRatio:
+                                                                false,
+                                                            plugins: {
+                                                                legend: {
+                                                                    display:
+                                                                        false,
+                                                                },
+                                                                tooltip: {
+                                                                    callbacks: {
+                                                                        label: (
+                                                                            context
+                                                                        ) =>
+                                                                            `Bookings: ${context.parsed.y}`,
+                                                                    },
+                                                                },
+                                                            },
+                                                            scales: {
+                                                                y: {
+                                                                    beginAtZero:
+                                                                        true,
+                                                                    ticks: {
+                                                                        stepSize: 1,
+                                                                    },
+                                                                },
+                                                            },
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-full">
+                                                        <p className="text-gray-500 text-sm">
+                                                            Loading...
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
+                                        {/* Revenue Distribution Chart */}
                                         <div>
                                             <h3 className="text-sm font-medium text-gray-500 mb-2">
-                                                Revenue Distribution
+                                                Revenue by Class
                                             </h3>
-                                            <div className="bg-gray-100 h-40 rounded-lg flex items-center justify-center">
-                                                <p className="text-gray-500 text-sm">
-                                                    Revenue distribution chart
-                                                    would appear here
-                                                </p>
+                                            <div className="bg-white h-48 rounded-lg p-4">
+                                                {chartData.revenueDistribution ? (
+                                                    <div className="flex flex-col items-center">
+                                                        <div className="w-32 h-32 mb-2">
+                                                            <Doughnut
+                                                                data={
+                                                                    chartData.revenueDistribution
+                                                                }
+                                                                options={{
+                                                                    responsive:
+                                                                        true,
+                                                                    maintainAspectRatio:
+                                                                        false,
+                                                                    plugins: {
+                                                                        legend: {
+                                                                            display:
+                                                                                false,
+                                                                        },
+                                                                        tooltip:
+                                                                            {
+                                                                                callbacks:
+                                                                                    {
+                                                                                        label: (
+                                                                                            context
+                                                                                        ) =>
+                                                                                            `${
+                                                                                                context.label
+                                                                                            }: ₹${context.parsed.toLocaleString()}`,
+                                                                                    },
+                                                                            },
+                                                                    },
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div className="flex flex-wrap justify-center gap-2 text-xs">
+                                                            {chartData.revenueDistribution.labels?.map(
+                                                                (
+                                                                    label: string,
+                                                                    index: number
+                                                                ) => (
+                                                                    <div
+                                                                        key={
+                                                                            label
+                                                                        }
+                                                                        className="flex items-center"
+                                                                    >
+                                                                        <div
+                                                                            className="w-3 h-3 rounded mr-1"
+                                                                            style={{
+                                                                                backgroundColor:
+                                                                                    chartData
+                                                                                        .revenueDistribution
+                                                                                        .datasets[0]
+                                                                                        .backgroundColor[
+                                                                                        index
+                                                                                    ],
+                                                                            }}
+                                                                        ></div>
+                                                                        <span>
+                                                                            {
+                                                                                label
+                                                                            }
+                                                                        </span>
+                                                                    </div>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-full">
+                                                        <p className="text-gray-500 text-sm">
+                                                            Loading...
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
+                                        {/* Popular Routes Chart */}
                                         <div>
                                             <h3 className="text-sm font-medium text-gray-500 mb-2">
-                                                Popular Routes
+                                                {chartData.popularRoutes &&
+                                                chartData.popularRoutes
+                                                    .labels &&
+                                                chartData.popularRoutes.labels
+                                                    .length > 0
+                                                    ? `Top ${
+                                                          chartData
+                                                              .popularRoutes
+                                                              .labels.length
+                                                      } Route${
+                                                          chartData
+                                                              .popularRoutes
+                                                              .labels.length > 1
+                                                              ? "s"
+                                                              : ""
+                                                      }`
+                                                    : "Popular Routes"}
                                             </h3>
-                                            <div className="bg-gray-100 h-40 rounded-lg flex items-center justify-center">
-                                                <p className="text-gray-500 text-sm">
-                                                    Popular routes chart would
-                                                    appear here
-                                                </p>
+                                            <div className="bg-white h-40 rounded-lg p-2">
+                                                {chartData.popularRoutes ? (
+                                                    <Bar
+                                                        data={
+                                                            chartData.popularRoutes
+                                                        }
+                                                        options={{
+                                                            responsive: true,
+                                                            maintainAspectRatio:
+                                                                false,
+                                                            plugins: {
+                                                                legend: {
+                                                                    display:
+                                                                        false,
+                                                                },
+                                                                tooltip: {
+                                                                    callbacks: {
+                                                                        title: (
+                                                                            context
+                                                                        ) => {
+                                                                            const index =
+                                                                                context[0]
+                                                                                    .dataIndex;
+                                                                            return (
+                                                                                chartData
+                                                                                    .popularRoutes
+                                                                                    .fullRouteNames[
+                                                                                    index
+                                                                                ] ||
+                                                                                context[0]
+                                                                                    .label
+                                                                            );
+                                                                        },
+                                                                        label: (
+                                                                            context
+                                                                        ) =>
+                                                                            `Bookings: ${context.parsed.y}`,
+                                                                    },
+                                                                },
+                                                            },
+                                                            scales: {
+                                                                y: {
+                                                                    beginAtZero:
+                                                                        true,
+                                                                    ticks: {
+                                                                        stepSize: 1,
+                                                                    },
+                                                                },
+                                                                x: {
+                                                                    ticks: {
+                                                                        maxRotation: 0,
+                                                                        minRotation: 0,
+                                                                        font: {
+                                                                            size: 11,
+                                                                        },
+                                                                    },
+                                                                },
+                                                            },
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-full">
+                                                        <p className="text-gray-500 text-sm">
+                                                            Loading...
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
