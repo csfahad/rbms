@@ -102,12 +102,15 @@ export const verifyOtpAndRegister = async (req: Request, res: Response) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/", // ensure cookie is available across all paths
         });
 
-        res.status(201).json({ user });
+        res.status(201).json({
+            user,
+            token: token, // include token in response for Authorization header usage
+        });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ message: error.errors[0].message });
@@ -150,12 +153,15 @@ export const register = async (req: Request, res: Response) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/", // ensure cookie is available across all paths
         });
 
-        res.status(201).json({ user });
+        res.status(201).json({
+            user,
+            token: token, // include token in response for Authorization header usage
+        });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return res.status(400).json({ message: error.errors[0].message });
@@ -199,7 +205,7 @@ export const login = async (req: Request, res: Response) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/", // ensure cookie is available across all paths
         });
@@ -211,6 +217,7 @@ export const login = async (req: Request, res: Response) => {
                 email: user.email,
                 role: user.role,
             },
+            token: token,
         });
     } catch (error) {
         if (error instanceof z.ZodError) {
