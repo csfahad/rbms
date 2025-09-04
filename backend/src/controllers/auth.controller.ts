@@ -101,15 +101,14 @@ export const verifyOtpAndRegister = async (req: Request, res: Response) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: true,
+            sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/", // ensure cookie is available across all paths
         });
 
         res.status(201).json({
             user,
-            token: token, // include token in response for Authorization header usage
         });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -153,14 +152,13 @@ export const register = async (req: Request, res: Response) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/", // ensure cookie is available across all paths
         });
 
         res.status(201).json({
             user,
-            token: token, // include token in response for Authorization header usage
         });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -205,7 +203,7 @@ export const login = async (req: Request, res: Response) => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/", // ensure cookie is available across all paths
         });
@@ -217,7 +215,6 @@ export const login = async (req: Request, res: Response) => {
                 email: user.email,
                 role: user.role,
             },
-            token: token,
         });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -373,7 +370,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
         const user = result.rows[0];
 
-        // Generate a reset token (JWT with 1 hour expiry)
+        // generate a reset token (JWT with 1 hour expiry)
         const resetToken = jwt.sign(
             { userId: user.id, email: user.email, type: "password-reset" },
             process.env.JWT_SECRET || "your-secret-key",
@@ -527,7 +524,7 @@ export const logout = async (req: Request, res: Response) => {
         res.clearCookie("token", {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
+            sameSite: "none",
             path: "/",
         });
 
