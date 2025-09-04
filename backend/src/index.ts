@@ -28,6 +28,11 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/support", supportRoutes);
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+    res.status(200).json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
 // Protected routes
 app.use("/api/trains", trainRoutes);
 app.use("/api/bookings", authenticateToken, bookingRoutes);
