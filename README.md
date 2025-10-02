@@ -1,4 +1,4 @@
-# Railway Online Booking System - RailBuddy
+# RailBuddy - Railway Online Booking System
 
 A comprehensive railway ticket booking system built with React, TypeScript, NodeJS, ExpressJS and PostgreSQL. This application provides a complete solution for train ticket booking with separate interfaces for users and administrators.
 
