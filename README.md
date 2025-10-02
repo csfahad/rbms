@@ -1,8 +1,8 @@
-# Railway Online Booking System
+# Railway Online Booking System - RailBuddy
 
-A comprehensive railway ticket booking system built with React, TypeScript, Node.js, and PostgreSQL. This application provides a complete solution for train ticket booking with separate interfaces for users and administrators.
+A comprehensive railway ticket booking system built with React, TypeScript, NodeJS, ExpressJS and PostgreSQL. This application provides a complete solution for train ticket booking with separate interfaces for users and administrators.
 
-## 🚀 Features
+## Features
 
 ### User Features
 
@@ -25,7 +25,7 @@ A comprehensive railway ticket booking system built with React, TypeScript, Node
 -   **Export Options**: Download reports in PDF, CSV, and Excel formats
 -   **Real-time Analytics**: Visual charts and graphs for business insights
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend
 
@@ -33,20 +33,20 @@ A comprehensive railway ticket booking system built with React, TypeScript, Node
 -   **Tailwind CSS** for styling
 -   **React Router** for navigation
 -   **Chart.js** for data visualization
--   **React Toastify** for notifications
+-   **React-hot-toast** for notifications
 -   **Lucide React** for icons
 -   **jsPDF** for PDF generation
 
 ### Backend
 
--   **Node.js** with Express.js
+-   **NodeJs** with ExpressJs
 -   **TypeScript** for type safety
 -   **PostgreSQL** with Neon Database
 -   **JWT** for authentication
 -   **bcryptjs** for password hashing
 -   **Zod** for data validation
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before running this application, make sure you have the following installed:
 
@@ -54,18 +54,19 @@ Before running this application, make sure you have the following installed:
 -   npm or yarn
 -   PostgreSQL database (or Neon Database account)
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
-### 1. Clone the Repository
+### 1. Fork this and Clone your Repository
 
 ```bash
-git clone <repository-url>
-cd railway-booking-system
+git clone https://github.com/<your-username>/rbms
+cd rbms
 ```
 
 ### 2. Install Frontend Dependencies
 
 ```bash
+cd frontend
 npm install
 ```
 
@@ -88,9 +89,18 @@ DATABASE_URL=your_postgresql_connection_string
 # JWT Configuration
 JWT_SECRET=your_jwt_secret_key
 
+# Frontend URL
+FRONTEND_URL=http://localhost:5173
+
 # Server Configuration
 PORT=5000
 NODE_ENV=development
+
+# Email Configuration
+EMAIL_PROVIDER=resend
+SKIP_EMAIL_SENDING=false
+RESEND_API_KEY=<resend-api-key>
+FROM_EMAIL="RailBuddy" <support@example.com>
 ```
 
 ### 5. Database Setup
@@ -117,42 +127,20 @@ npm run dev
 Start the frontend development server:
 
 ```bash
+cd frontend
 npm run dev
 ```
 
-#### Production Mode
-
-Build the frontend:
-
-```bash
-npm run build
-```
-
-Start the backend in production:
-
-```bash
-cd backend
-npm run build
-npm start
-```
-
-## 🔧 Configuration
-
-### Default Admin Account
-
-The system creates a default admin account with the following credentials:
-
--   **Email**: admin@railway.com
--   **Password**: admin123
+## Configuration
 
 ### Default User Account
 
 A demo user account is available:
 
--   **Email**: user@example.com
--   **Password**: password123
+-   **Email**: fahad@mail.com
+-   **Password**: Pass@1234
 
-## 📱 Usage
+## Usage
 
 ### For Users
 
@@ -168,14 +156,15 @@ A demo user account is available:
 2. **Manage Trains**: Add new trains or modify existing ones
 3. **View Bookings**: Monitor all customer bookings
 4. **Generate Reports**: Create various business reports
-5. **Analytics**: View dashboard with real-time statistics
+5. **Support Messages**: See and respond all the user support messages
+6. **Analytics**: View dashboard with real-time statistics
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 railway-booking-system/
-├── src/                          # Frontend source code
-│   ├── components/               # Reusable React components
+├── src/                         # Frontend source code
+│   ├── components/              # Reusable React components
 │   │   ├── auth/                # Authentication components
 │   │   ├── common/              # Common components (Navbar, Footer)
 │   │   └── search/              # Search-related components
@@ -198,7 +187,7 @@ railway-booking-system/
 └── package.json
 ```
 
-## 🔐 Security Features
+## Security Features
 
 -   **JWT Authentication**: Secure token-based authentication
 -   **Password Hashing**: bcrypt for secure password storage
@@ -206,7 +195,7 @@ railway-booking-system/
 -   **SQL Injection Protection**: Parameterized queries
 -   **Role-based Access Control**: Separate user and admin roles
 
-## 📊 Database Schema
+## Database Schema
 
 ### Users Table
 
@@ -240,7 +229,7 @@ railway-booking-system/
 -   total_fare (DECIMAL)
 -   status (VARCHAR)
 
-## 🚀 Deployment
+## Deployment
 
 ### Frontend Deployment
 
@@ -263,7 +252,7 @@ The backend can be deployed to:
 
 -   Neon Database
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
@@ -271,7 +260,7 @@ The backend can be deployed to:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📝 API Documentation
+## API Documentation
 
 ### Authentication Endpoints
 
@@ -294,11 +283,11 @@ The backend can be deployed to:
 -   `GET /api/bookings` - Get all bookings (Admin only)
 -   `PUT /api/bookings/:id/cancel` - Cancel booking
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 -   React team for the amazing framework
 -   Tailwind CSS for the utility-first CSS framework
 -   Neon Database for the serverless PostgreSQL
--   All contributors who helped build this project
+-   All contributors who willing to contribute in this project
 
 ---
