@@ -351,28 +351,48 @@ export const searchTrains = async (req: Request, res: Response) => {
         const result = await pool.query(
             `
             SELECT t.*,
-                   json_agg(
-                       json_build_object(
-                           'type', tc.class_type,
-                           'totalSeats', tc.total_seats,
-                           'fare', tc.fare,
-                           'availableSeats', tc.total_seats - COALESCE(
-                               (SELECT COUNT(*)
-                                FROM bookings b
-								LEFT JOIN passengers p ON p.booking_id = b.id
-                                WHERE b.train_id = t.id
-                                  AND b.travel_date = $3
-                                  AND b.class_type = tc.class_type
-                                  AND b.status = 'Confirmed'), 0
-                           )
+                   COALESCE(
+                       (SELECT json_agg(
+                           json_build_object(
+                               'type', tc.class_type,
+                               'totalSeats', tc.total_seats,
+                               'fare', tc.fare,
+                               'availableSeats', tc.total_seats - COALESCE(
+                                   (SELECT COUNT(*)
+                                    FROM bookings b
+    								LEFT JOIN passengers p ON p.booking_id = b.id
+                                    WHERE b.train_id = t.id
+                                      AND b.travel_date = $3
+                                      AND b.class_type = tc.class_type
+                                      AND b.status = 'Confirmed'), 0
+                               )
+                           ) ORDER BY tc.class_type
                        )
-                   ) as availability
+                       FROM train_classes tc 
+                       WHERE tc.train_id = t.id), '[]'::json
+                   ) AS availability,
+                   COALESCE(
+                       (SELECT json_agg(
+                           json_build_object(
+                               'id', ts.id,
+                               'stationName', ts.station_name,
+                               'stationCode', ts.station_code,
+                               'arrivalTime', ts.arrival_time,
+                               'departureTime', ts.departure_time,
+                               'stopNumber', ts.stop_number,
+                               'platformNumber', ts.platform_number,
+                               'haltDuration', ts.halt_duration_minutes,
+                               'distanceFromSource', ts.distance_from_source
+                           ) ORDER BY ts.stop_number
+                       )
+                       FROM train_stoppages ts 
+                       WHERE ts.train_id = t.id), '[]'::json
+                   ) AS stoppages
             FROM trains t
-            LEFT JOIN train_classes tc ON t.id = tc.train_id
             WHERE t.source_code ILIKE $1
               AND t.destination_code ILIKE $2
               AND $4 = ANY(t.running_days)
-            GROUP BY t.id
+            ORDER BY t.departure_time
             `,
             [source, destination, date, dayOfWeek]
         );
