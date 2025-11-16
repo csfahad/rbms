@@ -42,8 +42,8 @@ const LoginPage = () => {
     const demoCredentials = [
         {
             type: "User",
-            email: "user@railbuddy.com",
-            password: "railbuddy@user",
+            email: "fahad@mail.com",
+            password: "Pass@1234",
         },
     ];
 
